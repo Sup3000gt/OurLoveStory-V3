@@ -1,23 +1,44 @@
-import { useState } from 'react';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { Header } from './components/Header';
-import { demoMemories } from './data/memories';
-import { canViewMemory } from './lib/format';
+import { useMemories } from './hooks/useMemories';
+import { useOwnerSession } from './hooks/useOwnerSession';
 import { GalleryPage } from './pages/GalleryPage';
 import { HomePage } from './pages/HomePage';
+import { MemoryDetailPage } from './pages/MemoryDetailPage';
 import { StudioPage } from './pages/StudioPage';
 import './styles/global.css';
 
 export default function App() {
-  const [demoSignedIn, setDemoSignedIn] = useState(false);
-  const visibleMemories = demoMemories.filter((memory) => canViewMemory(memory.visibility, demoSignedIn));
+  const ownerSession = useOwnerSession();
+  const memories = useMemories();
+  const isOwner = ownerSession.data?.isOwner ?? false;
+
   return (
     <BrowserRouter>
-      <Header isSignedIn={demoSignedIn} onSignIn={() => setDemoSignedIn(true)} onSignOut={() => setDemoSignedIn(false)}/>
+      <Header isOwner={isOwner} ownerName={ownerSession.data?.displayName ?? null} />
       <Routes>
-        <Route path="/" element={<HomePage memories={visibleMemories}/>}/>
-        <Route path="/gallery" element={<GalleryPage memories={visibleMemories}/>}/>
-        <Route path="/studio" element={<StudioPage isSignedIn={demoSignedIn}/>}/>
+        <Route
+          path="/"
+          element={<HomePage memories={memories.data ?? []} isLoading={memories.isLoading} error={memories.error} />}
+        />
+        <Route
+          path="/gallery"
+          element={<GalleryPage memories={memories.data ?? []} isLoading={memories.isLoading} error={memories.error} />}
+        />
+        <Route
+          path="/memory/:memoryId"
+          element={<MemoryDetailPage memories={memories.data ?? []} isLoading={memories.isLoading} />}
+        />
+        <Route
+          path="/studio"
+          element={
+            <StudioPage
+              isOwner={isOwner}
+              ownerCheckLoading={ownerSession.isLoading}
+              ownerCheckError={ownerSession.error}
+            />
+          }
+        />
       </Routes>
     </BrowserRouter>
   );
