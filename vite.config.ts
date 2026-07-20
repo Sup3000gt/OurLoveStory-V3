@@ -1,10 +1,12 @@
-import { defineConfig } from 'vite';
+/// <reference types="vitest/config" />
+import { cloudflare } from '@cloudflare/vite-plugin';
 import react from '@vitejs/plugin-react';
+import { defineConfig } from 'vite';
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), cloudflare()],
   test: {
     environment: 'jsdom',
-    globals: true
-  }
+    globals: true,
+  },
 });

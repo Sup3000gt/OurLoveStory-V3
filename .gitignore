@@ -5,3 +5,9 @@ dist
 .env
 .env.local
 .DS_Store
+
+.worktrees/
+database/owners.local.sql
+r2-cors.local.json
+
+*.tsbuildinfo

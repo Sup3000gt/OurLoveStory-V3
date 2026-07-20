@@ -1,0 +1,6 @@
+# Copy this file to .dev.vars for local development. Never commit real values.
+CLERK_SECRET_KEY=sk_test_replace_me
+# Optional: Clerk PEM public key for networkless JWT verification.
+CLERK_JWT_KEY=
+R2_ACCESS_KEY_ID=replace_me
+R2_SECRET_ACCESS_KEY=replace_me

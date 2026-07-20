@@ -1,11 +1,22 @@
 name = "our-love-story"
-compatibility_date = "2026-07-01"
-pages_build_output_dir = "dist"
+main = "./worker/index.ts"
+compatibility_date = "2026-07-18"
+compatibility_flags = ["nodejs_compat"]
+
+[assets]
+binding = "ASSETS"
+not_found_handling = "single-page-application"
+run_worker_first = ["/api/*"]
+
+[vars]
+R2_ACCOUNT_ID = "REPLACE_WITH_CLOUDFLARE_ACCOUNT_ID"
+R2_BUCKET_NAME = "our-love-story-media"
+CLERK_AUTHORIZED_PARTIES = "http://localhost:5173"
 
 [[d1_databases]]
 binding = "DB"
 database_name = "our-love-story"
-database_id = "REPLACE_WITH_D1_DATABASE_ID"
+database_id = "00000000-0000-0000-0000-000000000000"
 
 [[r2_buckets]]
 binding = "MEDIA"
