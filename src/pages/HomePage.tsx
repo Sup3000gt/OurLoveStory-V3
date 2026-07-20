@@ -1,4 +1,4 @@
-import { ArrowRight, Heart } from 'lucide-react';
+﻿import { ArrowRight, Heart } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import type { Memory } from '../../shared/contracts';
 import { GalleryGrid } from '../components/GalleryGrid';
@@ -17,7 +17,24 @@ export function HomePage({ memories, isLoading, error }: HomePageProps) {
   return (
     <main>
       <section className="hero-shell">
-        <div className="hero-image"><img src="/media/hero.jpg" alt="A couple sharing a quiet moment at sunset" /></div>
+        <div className="hero-collage" aria-label="Two favorite portraits from our story">
+          <figure className="hero-photo hero-photo-primary">
+            <img
+              src="/media/hero-primary.jpg"
+              alt="A favorite portrait from our travels"
+              fetchPriority="high"
+            />
+          </figure>
+          <figure className="hero-photo hero-photo-secondary">
+            <img
+              src="/media/hero-secondary.jpg"
+              alt="Another favorite portrait from our story"
+            />
+          </figure>
+          <span className="hero-tape hero-tape-primary" aria-hidden="true" />
+          <span className="hero-tape hero-tape-secondary" aria-hidden="true" />
+        </div>
+
         <div className="hero-copy">
           <p className="hero-title">the little moments<br />that mean <em>everything</em></p>
           <Heart className="hero-heart" size={24} fill="currentColor" />
@@ -37,7 +54,7 @@ export function HomePage({ memories, isLoading, error }: HomePageProps) {
         {!isLoading && !error && homeMemories.length === 0 ? (
           <GalleryStatus message="No public memories have been published yet." />
         ) : null}
-        {homeMemories.length > 0 ? <GalleryGrid memories={homeMemories} /> : null}
+        {homeMemories.length > 0 ? <GalleryGrid memories={homeMemories} variant="portrait" /> : null}
         <div className="center-action"><Link to="/gallery" className="text-link">Browse all memories <ArrowRight size={16} /></Link></div>
       </section>
 

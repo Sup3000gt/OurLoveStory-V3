@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+﻿import { useMemo, useState } from 'react';
 import type { Memory } from '../../shared/contracts';
 import { MEMORY_CATEGORIES } from '../../shared/contracts';
 import { GalleryGrid } from '../components/GalleryGrid';
@@ -36,7 +36,7 @@ export function GalleryPage({ memories, isLoading, error }: GalleryPageProps) {
       {!isLoading && !error && filtered.length === 0 ? (
         <div className="gallery-status">There are no memories in this collection yet.</div>
       ) : null}
-      {filtered.length > 0 ? <GalleryGrid memories={filtered} /> : null}
+      {filtered.length > 0 ? <GalleryGrid memories={filtered} variant="masonry" /> : null}
     </main>
   );
 }
