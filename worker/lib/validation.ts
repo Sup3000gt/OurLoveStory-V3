@@ -3,7 +3,9 @@ import {
   type CreateMemoryAssetInput,
   type CreateMemoryRequest,
   type MediaType,
+  type UpdateAssetVisibilityRequest,
   type UploadFileRequest,
+  type Visibility,
 } from '../../shared/contracts';
 
 const IMAGE_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
@@ -27,6 +29,21 @@ export function mediaTypeForMime(mimeType: string): MediaType {
   if (IMAGE_MIME_TYPES.has(normalized)) return 'image';
   if (VIDEO_MIME_TYPES.has(normalized)) return 'video';
   throw new ValidationError(`Unsupported media type: ${mimeType}`);
+}
+
+export function validateVisibility(value: unknown, label = 'Visibility'): Visibility {
+  if (value !== 'public' && value !== 'private') {
+    throw new ValidationError(`${label} must be public or private.`);
+  }
+  return value;
+}
+
+export function validateAssetVisibilityUpdate(value: unknown): UpdateAssetVisibilityRequest {
+  if (!value || typeof value !== 'object') {
+    throw new ValidationError('Asset visibility data is required.');
+  }
+  const record = value as Record<string, unknown>;
+  return { visibility: validateVisibility(record.visibility, 'Asset visibility') };
 }
 
 export function validateUploadFiles(value: unknown): UploadFileRequest[] {
@@ -75,10 +92,9 @@ export function validateCreateMemoryRequest(value: unknown): CreateMemoryRequest
     throw new ValidationError('Choose a valid memory category.');
   }
 
-  const visibility = record.visibility;
-  if (visibility !== 'public' && visibility !== 'private') {
-    throw new ValidationError('Visibility must be public or private.');
-  }
+  const visibility = record.visibility === undefined
+    ? 'private'
+    : validateVisibility(record.visibility);
 
   const status = record.status;
   if (status !== 'draft' && status !== 'published') {
@@ -136,6 +152,9 @@ function validateMemoryAsset(value: unknown, index: number): CreateMemoryAssetIn
     sizeBytes,
     mediaType,
     sortOrder,
+    visibility: record.visibility === undefined
+      ? 'private'
+      : validateVisibility(record.visibility, `Asset ${index + 1} visibility`),
   };
 }
 

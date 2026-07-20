@@ -3,6 +3,7 @@ import {
   assertOwnedObjectKey,
   mediaTypeForMime,
   sanitizeDownloadFilename,
+  validateAssetVisibilityUpdate,
   validateCreateMemoryRequest,
   validateUploadFiles,
 } from './validation';
@@ -25,6 +26,7 @@ const validMemory = {
       sizeBytes: 1024,
       mediaType: 'image' as const,
       sortOrder: 0,
+      visibility: 'private' as const,
     },
   ],
 };
@@ -51,12 +53,12 @@ describe('validateUploadFiles', () => {
   });
 
   it('rejects more than twenty assets', () => {
-    const files = Array.from({ length: 21 }, (_, index) => ({
+    const selectedFiles = Array.from({ length: 21 }, (_, index) => ({
       filename: `${index}.jpg`,
       mimeType: 'image/jpeg',
       sizeBytes: 100,
     }));
-    expect(() => validateUploadFiles(files)).toThrow('up to 20');
+    expect(() => validateUploadFiles(selectedFiles)).toThrow('up to 20');
   });
 
   it('rejects an oversized image', () => {
@@ -72,12 +74,43 @@ describe('validateCreateMemoryRequest', () => {
   it('accepts a complete memory and normalizes strings', () => {
     const result = validateCreateMemoryRequest({ ...validMemory, title: '  Trip to Paris  ' });
     expect(result.title).toBe('Trip to Paris');
+    expect(result.assets[0]?.visibility).toBe('private');
+  });
+
+  it('defaults missing per-asset visibility to private', () => {
+    const assetWithoutVisibility = { ...validMemory.assets[0] };
+    delete (assetWithoutVisibility as { visibility?: string }).visibility;
+    const result = validateCreateMemoryRequest({
+      ...validMemory,
+      assets: [assetWithoutVisibility],
+    });
+    expect(result.assets[0]?.visibility).toBe('private');
+  });
+
+  it('rejects an invalid per-asset visibility', () => {
+    expect(() =>
+      validateCreateMemoryRequest({
+        ...validMemory,
+        assets: [{ ...validMemory.assets[0], visibility: 'friends' }],
+      }),
+    ).toThrow('visibility');
   });
 
   it('requires the cover to belong to the uploaded assets', () => {
     expect(() =>
       validateCreateMemoryRequest({ ...validMemory, coverObjectKey: 'originals/user_123/other.jpg' }),
     ).toThrow('cover');
+  });
+});
+
+describe('validateAssetVisibilityUpdate', () => {
+  it('accepts public and private visibility updates', () => {
+    expect(validateAssetVisibilityUpdate({ visibility: 'public' })).toEqual({ visibility: 'public' });
+    expect(validateAssetVisibilityUpdate({ visibility: 'private' })).toEqual({ visibility: 'private' });
+  });
+
+  it('rejects unsupported visibility values', () => {
+    expect(() => validateAssetVisibilityUpdate({ visibility: 'friends' })).toThrow('public or private');
   });
 });
 

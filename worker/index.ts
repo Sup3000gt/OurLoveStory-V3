@@ -6,6 +6,7 @@ import {
   getMemory,
   listMemories,
   serveAsset,
+  updateAssetVisibility,
   updateMemory,
 } from './lib/memories';
 import { handleError, json, methodNotAllowed, notFound } from './lib/responses';
@@ -77,10 +78,15 @@ export default {
 
       const assetMatch = url.pathname.match(/^\/api\/assets\/([^/]+)$/);
       if (assetMatch) {
-        if (request.method !== 'GET' && request.method !== 'HEAD') {
-          return methodNotAllowed(['GET', 'HEAD']);
+        const assetId = decodeURIComponent(assetMatch[1]);
+        if (request.method === 'PATCH') {
+          await requireOwner(request, env);
+          return json(await updateAssetVisibility(request, env, assetId));
         }
-        return serveAsset(request, env, decodeURIComponent(assetMatch[1]), false);
+        if (request.method !== 'GET' && request.method !== 'HEAD') {
+          return methodNotAllowed(['GET', 'HEAD', 'PATCH']);
+        }
+        return serveAsset(request, env, assetId, false);
       }
 
       return notFound();

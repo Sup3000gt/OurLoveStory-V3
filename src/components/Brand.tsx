@@ -1,8 +1,12 @@
+import { useTranslation } from '../i18n/useTranslation';
+
 export function Brand() {
+  const { t } = useTranslation();
+
   return (
-    <a className="brand" href="/" aria-label="Our Story home">
-      <strong>Our Story</strong>
-      <span>— a gallery of us —</span>
+    <a className="brand" href="/" aria-label={t('brand.title')}>
+      <strong>{t('brand.title')}</strong>
+      <span>{t('brand.subtitle')}</span>
     </a>
   );
 }

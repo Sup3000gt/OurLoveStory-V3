@@ -4,6 +4,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App';
 import { ConfigurationRequired } from './components/ConfigurationRequired';
+import { LanguageProvider } from './i18n/LanguageProvider';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -15,14 +16,16 @@ const isConfigured = Boolean(publishableKey && !publishableKey.includes('replace
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    {isConfigured ? (
-      <ClerkProvider publishableKey={publishableKey} afterSignOutUrl="/">
-        <QueryClientProvider client={queryClient}>
-          <App />
-        </QueryClientProvider>
-      </ClerkProvider>
-    ) : (
-      <ConfigurationRequired />
-    )}
+    <LanguageProvider>
+      {isConfigured ? (
+        <ClerkProvider publishableKey={publishableKey} afterSignOutUrl="/">
+          <QueryClientProvider client={queryClient}>
+            <App />
+          </QueryClientProvider>
+        </ClerkProvider>
+      ) : (
+        <ConfigurationRequired />
+      )}
+    </LanguageProvider>
   </StrictMode>,
 );

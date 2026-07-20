@@ -3,14 +3,17 @@ import {
   type CreateMemoryRequest,
   type Memory,
   type MemoryAsset,
+  type UpdateAssetVisibilityResponse,
   type UpdateMemoryRequest,
 } from '../../shared/contracts';
 import type { Env, OwnerIdentity } from '../env';
 import { optionalOwner } from './auth';
+import { resolveVisibleCoverAssetId } from './asset-visibility';
 import { HttpError, noContent, notFound } from './responses';
 import {
   assertOwnedObjectKey,
   sanitizeDownloadFilename,
+  validateAssetVisibilityUpdate,
   validateCreateMemoryRequest,
   ValidationError,
 } from './validation';
@@ -34,6 +37,7 @@ interface JoinedMemoryRow {
   mime_type: string;
   size_bytes: number;
   sort_order: number;
+  asset_visibility: MemoryAsset['visibility'];
 }
 
 interface AssetDescriptorRow {
@@ -42,7 +46,7 @@ interface AssetDescriptorRow {
   original_filename: string;
   mime_type: string;
   size_bytes: number;
-  visibility: Memory['visibility'];
+  visibility: MemoryAsset['visibility'];
   status: Memory['status'];
 }
 
@@ -50,10 +54,15 @@ interface ObjectKeyRow {
   object_key: string;
 }
 
+interface AssetOwnerRow {
+  asset_id: string;
+  memory_id: string;
+}
+
 export async function listMemories(env: Env, isOwner: boolean): Promise<Memory[]> {
   const accessClause = isOwner
     ? '1 = 1'
-    : "m.status = 'published' AND m.visibility = 'public'";
+    : "m.status = 'published' AND a.visibility = 'public'";
   const result = await env.DB.prepare(`
     SELECT
       m.id AS memory_id,
@@ -73,20 +82,21 @@ export async function listMemories(env: Env, isOwner: boolean): Promise<Memory[]
       a.original_filename,
       a.mime_type,
       a.size_bytes,
-      a.sort_order
+      a.sort_order,
+      a.visibility AS asset_visibility
     FROM memories m
     INNER JOIN media_assets a ON a.memory_id = m.id
     WHERE ${accessClause}
     ORDER BY m.taken_at DESC, m.created_at DESC, a.sort_order ASC
   `).all<JoinedMemoryRow>();
 
-  return aggregateMemories(result.results);
+  return aggregateMemories(result.results, isOwner);
 }
 
 export async function getMemory(env: Env, memoryId: string, isOwner: boolean): Promise<Memory | null> {
   const accessClause = isOwner
     ? '1 = 1'
-    : "m.status = 'published' AND m.visibility = 'public'";
+    : "m.status = 'published' AND a.visibility = 'public'";
   const result = await env.DB.prepare(`
     SELECT
       m.id AS memory_id,
@@ -106,7 +116,8 @@ export async function getMemory(env: Env, memoryId: string, isOwner: boolean): P
       a.original_filename,
       a.mime_type,
       a.size_bytes,
-      a.sort_order
+      a.sort_order,
+      a.visibility AS asset_visibility
     FROM memories m
     INNER JOIN media_assets a ON a.memory_id = m.id
     WHERE m.id = ? AND ${accessClause}
@@ -115,7 +126,7 @@ export async function getMemory(env: Env, memoryId: string, isOwner: boolean): P
     .bind(memoryId)
     .all<JoinedMemoryRow>();
 
-  return aggregateMemories(result.results)[0] ?? null;
+  return aggregateMemories(result.results, isOwner)[0] ?? null;
 }
 
 export async function createMemory(
@@ -147,7 +158,7 @@ export async function createMemory(
       input.location,
       input.date,
       input.category,
-      input.visibility,
+      'private',
       input.featured ? 1 : 0,
       input.status,
       coverAssetId,
@@ -160,8 +171,8 @@ export async function createMemory(
       env.DB.prepare(`
         INSERT INTO media_assets (
           id, memory_id, media_type, object_key, original_filename,
-          mime_type, size_bytes, sort_order
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+          mime_type, size_bytes, sort_order, visibility
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       `).bind(
         assetIds[index],
         memoryId,
@@ -171,6 +182,7 @@ export async function createMemory(
         asset.mimeType,
         asset.sizeBytes,
         asset.sortOrder,
+        asset.visibility,
       ),
     );
   });
@@ -250,6 +262,39 @@ export async function updateMemory(
   return updated;
 }
 
+export async function updateAssetVisibility(
+  request: Request,
+  env: Env,
+  assetId: string,
+): Promise<UpdateAssetVisibilityResponse> {
+  const input = validateAssetVisibilityUpdate(await request.json());
+  const asset = await env.DB.prepare(`
+    SELECT id AS asset_id, memory_id
+    FROM media_assets
+    WHERE id = ?
+    LIMIT 1
+  `)
+    .bind(assetId)
+    .first<AssetOwnerRow>();
+
+  if (!asset) throw new HttpError(404, 'Asset not found.');
+
+  await env.DB.batch([
+    env.DB.prepare(`
+      UPDATE media_assets
+      SET visibility = ?
+      WHERE id = ?
+    `).bind(input.visibility, assetId),
+    env.DB.prepare(`
+      UPDATE memories
+      SET updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `).bind(asset.memory_id),
+  ]);
+
+  return { assetId, visibility: input.visibility };
+}
+
 export async function deleteMemory(
   env: Env,
   memoryId: string,
@@ -277,7 +322,7 @@ export async function serveAsset(
       a.original_filename,
       a.mime_type,
       a.size_bytes,
-      m.visibility,
+      a.visibility,
       m.status
     FROM media_assets a
     INNER JOIN memories m ON m.id = a.memory_id
@@ -338,7 +383,7 @@ function normalizeR2Range(range: R2Range, objectSize: number): { offset: number;
   return { offset, length };
 }
 
-function aggregateMemories(rows: JoinedMemoryRow[]): Memory[] {
+function aggregateMemories(rows: JoinedMemoryRow[], isOwner: boolean): Memory[] {
   const memories = new Map<string, Memory>();
   for (const row of rows) {
     let memory = memories.get(row.memory_id);
@@ -350,7 +395,7 @@ function aggregateMemories(rows: JoinedMemoryRow[]): Memory[] {
         date: row.taken_at,
         description: row.description,
         category: row.category,
-        visibility: row.visibility,
+        visibility: isOwner ? row.visibility : 'public',
         featured: Boolean(row.is_featured),
         status: row.status,
         coverAssetId: row.cover_asset_id,
@@ -369,9 +414,17 @@ function aggregateMemories(rows: JoinedMemoryRow[]): Memory[] {
       mimeType: row.mime_type,
       sizeBytes: row.size_bytes,
       sortOrder: row.sort_order,
+      visibility: row.asset_visibility,
     });
   }
-  return [...memories.values()];
+
+  const aggregated = [...memories.values()];
+  if (!isOwner) {
+    for (const memory of aggregated) {
+      memory.coverAssetId = resolveVisibleCoverAssetId(memory.coverAssetId, memory.assets);
+    }
+  }
+  return aggregated;
 }
 
 async function getMemoryForOwner(env: Env, memoryId: string): Promise<Memory | null> {
@@ -394,7 +447,8 @@ async function getMemoryForOwner(env: Env, memoryId: string): Promise<Memory | n
       a.original_filename,
       a.mime_type,
       a.size_bytes,
-      a.sort_order
+      a.sort_order,
+      a.visibility AS asset_visibility
     FROM memories m
     INNER JOIN media_assets a ON a.memory_id = m.id
     WHERE m.id = ?
@@ -402,7 +456,7 @@ async function getMemoryForOwner(env: Env, memoryId: string): Promise<Memory | n
   `)
     .bind(memoryId)
     .all<JoinedMemoryRow>();
-  return aggregateMemories(result.results)[0] ?? null;
+  return aggregateMemories(result.results, true)[0] ?? null;
 }
 
 async function verifyUploadedObjects(env: Env, input: CreateMemoryRequest): Promise<void> {

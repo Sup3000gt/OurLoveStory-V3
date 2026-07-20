@@ -3,7 +3,9 @@ import type {
   CreateMemoryRequest,
   Memory,
   OwnerSession,
+  UpdateAssetVisibilityResponse,
   UploadFileRequest,
+  Visibility,
 } from '../../shared/contracts';
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '/api').replace(/\/$/, '');
@@ -19,11 +21,11 @@ export async function getMemories(getToken?: GetToken): Promise<Memory[]> {
 }
 
 export async function authorizeUploads(
-  files: File[],
+  selectedFiles: File[],
   getToken: GetToken,
 ): Promise<AuthorizeUploadsResponse> {
   const payload: { files: UploadFileRequest[] } = {
-    files: files.map((file) => ({
+    files: selectedFiles.map((file) => ({
       filename: file.name,
       mimeType: file.type,
       sizeBytes: file.size,
@@ -43,6 +45,21 @@ export async function createMemory(
     method: 'POST',
     body: JSON.stringify(memory),
   });
+}
+
+export async function updateAssetVisibility(
+  assetId: string,
+  visibility: Visibility,
+  getToken: GetToken,
+): Promise<UpdateAssetVisibilityResponse> {
+  return apiRequest<UpdateAssetVisibilityResponse>(
+    `/assets/${encodeURIComponent(assetId)}`,
+    getToken,
+    {
+      method: 'PATCH',
+      body: JSON.stringify({ visibility }),
+    },
+  );
 }
 
 export async function uploadFileDirectly(

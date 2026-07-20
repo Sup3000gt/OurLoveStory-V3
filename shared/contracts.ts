@@ -20,6 +20,7 @@ export interface MemoryAsset {
   mimeType: string;
   sizeBytes: number;
   sortOrder: number;
+  visibility: Visibility;
 }
 
 export interface Memory {
@@ -29,6 +30,10 @@ export interface Memory {
   date: string;
   description: string;
   category: MemoryCategory;
+  /**
+   * Compatibility field for the original memory-level visibility model.
+   * Asset visibility is the source of truth for public access.
+   */
   visibility: Visibility;
   featured: boolean;
   status: MemoryStatus;
@@ -76,6 +81,7 @@ export interface CreateMemoryAssetInput {
   sizeBytes: number;
   mediaType: MediaType;
   sortOrder: number;
+  visibility: Visibility;
 }
 
 export interface CreateMemoryRequest {
@@ -84,6 +90,10 @@ export interface CreateMemoryRequest {
   date: string;
   category: MemoryCategory;
   description: string;
+  /**
+   * Retained for backwards compatibility. New memories are persisted as
+   * private at the memory level; each asset controls its own visibility.
+   */
   visibility: Visibility;
   featured: boolean;
   status: MemoryStatus;
@@ -101,6 +111,15 @@ export interface UpdateMemoryRequest {
   featured?: boolean;
   status?: MemoryStatus;
   coverAssetId?: string;
+}
+
+export interface UpdateAssetVisibilityRequest {
+  visibility: Visibility;
+}
+
+export interface UpdateAssetVisibilityResponse {
+  assetId: string;
+  visibility: Visibility;
 }
 
 export interface ApiErrorBody {

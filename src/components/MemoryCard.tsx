@@ -1,11 +1,21 @@
-import { CalendarDays, Download, LockKeyhole, MapPin, Play } from 'lucide-react';
+import { CalendarDays, Download, MapPin, Play } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import type { Memory } from '../../shared/contracts';
+import { useTranslation } from '../i18n/useTranslation';
 import { formatMemoryDate } from '../lib/format';
+import { summarizeAssetVisibility } from '../lib/memory-visibility';
 
-export function MemoryCard({ memory }: { memory: Memory }) {
+interface MemoryCardProps {
+  memory: Memory;
+  isOwner: boolean;
+}
+
+export function MemoryCard({ memory, isOwner }: MemoryCardProps) {
+  const { language, t } = useTranslation();
   const cover = memory.assets.find((asset) => asset.id === memory.coverAssetId) ?? memory.assets[0];
   if (!cover) return null;
+
+  const visibilitySummary = summarizeAssetVisibility(memory.assets);
 
   return (
     <article className="memory-card">
@@ -20,11 +30,7 @@ export function MemoryCard({ memory }: { memory: Memory }) {
             <img src={cover.url} alt={memory.title} loading="lazy" />
           )}
           <div className="memory-badges">
-            {memory.status === 'draft' ? <span className="draft-badge">draft</span> : null}
-            <span className={`visibility-badge ${memory.visibility}`}>
-              {memory.visibility === 'private' ? <LockKeyhole size={12} /> : null}
-              {memory.visibility}
-            </span>
+            {memory.status === 'draft' ? <span className="draft-badge">{t('memory.draft')}</span> : null}
           </div>
         </div>
       </Link>
@@ -35,18 +41,29 @@ export function MemoryCard({ memory }: { memory: Memory }) {
             className="icon-button"
             href={cover.downloadUrl}
             download={cover.filename}
-            aria-label={`Download original ${memory.title}`}
-            title="Download original"
+            aria-label={`${t('memory.downloadOriginal')}: ${memory.title}`}
+            title={t('memory.downloadOriginal')}
           >
             <Download size={17} />
           </a>
         </div>
         <div className="metadata">
           <span><MapPin size={14} />{memory.location}</span>
-          <span><CalendarDays size={14} />{formatMemoryDate(memory.date)}</span>
+          <span><CalendarDays size={14} />{formatMemoryDate(memory.date, language)}</span>
         </div>
         <p>{memory.description}</p>
-        {memory.assets.length > 1 ? <small className="asset-count">{memory.assets.length} photos &amp; videos</small> : null}
+        {isOwner ? (
+          <small className="asset-visibility-summary">
+            {t('memory.assetSummary', {
+              publicCount: visibilitySummary.publicCount,
+              privateCount: visibilitySummary.privateCount,
+            })}
+          </small>
+        ) : memory.assets.length > 1 ? (
+          <small className="asset-count">
+            {t('memory.assetCount', { count: memory.assets.length })}
+          </small>
+        ) : null}
       </div>
     </article>
   );

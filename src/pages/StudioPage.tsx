@@ -3,6 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import {
   CalendarDays,
   CloudUpload,
+  Globe2,
   Heart,
   ImagePlus,
   LockKeyhole,
@@ -12,7 +13,7 @@ import {
   Star,
   Trash2,
 } from 'lucide-react';
-import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
+import { type FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   MEMORY_CATEGORIES,
@@ -20,7 +21,14 @@ import {
   type MemoryStatus,
   type Visibility,
 } from '../../shared/contracts';
+import {
+  categoryTranslationKeys,
+  type TranslationKey,
+  type TranslationValues,
+} from '../i18n/translations';
+import { useTranslation } from '../i18n/useTranslation';
 import { authorizeUploads, createMemory, uploadFileDirectly } from '../lib/api';
+import { formatMemoryDate } from '../lib/format';
 
 const ACCEPTED_TYPES = new Set([
   'image/jpeg',
@@ -40,7 +48,6 @@ interface MemoryDraft {
   date: string;
   category: (typeof MEMORY_CATEGORIES)[number];
   description: string;
-  visibility: Visibility;
   featured: boolean;
 }
 
@@ -48,6 +55,7 @@ interface SelectedMedia {
   id: string;
   file: File;
   previewUrl: string;
+  visibility: Visibility;
 }
 
 const initialDraft: MemoryDraft = {
@@ -56,7 +64,6 @@ const initialDraft: MemoryDraft = {
   date: new Date().toISOString().slice(0, 10),
   category: 'Travel',
   description: '',
-  visibility: 'private',
   featured: false,
 };
 
@@ -66,10 +73,17 @@ interface StudioPageProps {
   ownerCheckError: Error | null;
 }
 
-export function StudioPage({ isOwner, ownerCheckLoading, ownerCheckError }: StudioPageProps) {
+type Translator = (key: TranslationKey, values?: TranslationValues) => string;
+
+export function StudioPage({
+  isOwner,
+  ownerCheckLoading,
+  ownerCheckError,
+}: StudioPageProps) {
   const { isLoaded, isSignedIn, getToken } = useAuth();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const { language, t } = useTranslation();
   const [draft, setDraft] = useState<MemoryDraft>(initialDraft);
   const [files, setFiles] = useState<SelectedMedia[]>([]);
   const [coverId, setCoverId] = useState<string | null>(null);
@@ -90,18 +104,21 @@ export function StudioPage({ isOwner, ownerCheckLoading, ownerCheckError }: Stud
     () => files.find((item) => item.id === coverId) ?? files[0] ?? null,
     [coverId, files],
   );
+  const hasPublicMedia = files.some((item) => item.visibility === 'public');
 
   if (!isLoaded || ownerCheckLoading) {
-    return <main className="login-required"><p>Checking owner access…</p></main>;
+    return <main className="login-required"><p>{t('studio.checking')}</p></main>;
   }
 
   if (!isSignedIn) {
     return (
       <main className="login-required">
         <LockKeyhole size={40} />
-        <h1>Owner access only</h1>
-        <p>Sign in with one of the two owner accounts to upload or view private memories.</p>
-        <SignInButton mode="modal"><button className="primary-button">Owner login</button></SignInButton>
+        <h1>{t('studio.ownerOnlyTitle')}</h1>
+        <p>{t('studio.ownerOnlyText')}</p>
+        <SignInButton mode="modal">
+          <button className="primary-button" type="button">{t('studio.ownerLogin')}</button>
+        </SignInButton>
       </main>
     );
   }
@@ -110,8 +127,8 @@ export function StudioPage({ isOwner, ownerCheckLoading, ownerCheckError }: Stud
     return (
       <main className="login-required">
         <LockKeyhole size={40} />
-        <h1>This account is not an owner.</h1>
-        <p>{ownerCheckError?.message ?? 'Add this Clerk user ID to the D1 owners table only if it should have access.'}</p>
+        <h1>{t('studio.notOwnerTitle')}</h1>
+        <p>{ownerCheckError ? t('studio.notOwnerText') : t('studio.notOwnerText')}</p>
       </main>
     );
   }
@@ -121,17 +138,18 @@ export function StudioPage({ isOwner, ownerCheckLoading, ownerCheckError }: Stud
     setError('');
     const nextFiles = Array.from(selected);
     try {
-      validateSelectedFiles(nextFiles);
+      validateSelectedFiles(nextFiles, t);
       files.forEach((item) => URL.revokeObjectURL(item.previewUrl));
       const next = nextFiles.map((file) => ({
         id: crypto.randomUUID(),
         file,
         previewUrl: URL.createObjectURL(file),
+        visibility: 'private' as const,
       }));
       setFiles(next);
       setCoverId(next[0]?.id ?? null);
     } catch (selectionError) {
-      setError(selectionError instanceof Error ? selectionError.message : 'The selected files are invalid.');
+      setError(selectionError instanceof Error ? selectionError.message : t('studio.invalidSelection'));
     }
   }
 
@@ -141,6 +159,16 @@ export function StudioPage({ isOwner, ownerCheckLoading, ownerCheckError }: Stud
     const next = files.filter((item) => item.id !== id);
     setFiles(next);
     if (coverId === id) setCoverId(next[0]?.id ?? null);
+  }
+
+  function toggleSelectedVisibility(id: string) {
+    setFiles((current) =>
+      current.map((item) =>
+        item.id === id
+          ? { ...item, visibility: item.visibility === 'public' ? 'private' : 'public' }
+          : item,
+      ),
+    );
   }
 
   function resetForm() {
@@ -155,36 +183,41 @@ export function StudioPage({ isOwner, ownerCheckLoading, ownerCheckError }: Stud
   async function saveMemory(status: MemoryStatus) {
     setError('');
     if (!draft.title.trim() || !draft.location.trim() || !draft.date) {
-      setError('Title, location, and date are required.');
+      setError(t('studio.requiredFields'));
       return;
     }
     if (!cover || files.length === 0) {
-      setError('Choose at least one photo or video.');
+      setError(t('studio.chooseAtLeastOne'));
       return;
     }
 
     setBusy(true);
     try {
-      setProgress('Preparing secure uploads…');
+      setProgress(t('studio.preparing'));
       const authorization = await authorizeUploads(files.map((item) => item.file), getToken);
       for (let index = 0; index < authorization.uploads.length; index += 1) {
         const upload = authorization.uploads[index];
         const selected = files[index];
-        if (!upload || !selected) throw new Error('Upload authorization did not match the selected files.');
-        setProgress(`Uploading ${index + 1} of ${files.length}: ${selected.file.name}`);
+        if (!upload || !selected) throw new Error('Upload authorization mismatch.');
+        setProgress(t('studio.uploading', {
+          current: index + 1,
+          total: files.length,
+          filename: selected.file.name,
+        }));
         await uploadFileDirectly(upload.uploadUrl, upload.headers, selected.file);
       }
 
       const coverIndex = files.findIndex((item) => item.id === cover.id);
       const coverUpload = authorization.uploads[coverIndex];
-      if (!coverUpload) throw new Error('The cover file could not be matched to its upload.');
+      if (!coverUpload) throw new Error('Cover upload mismatch.');
+
       const request: CreateMemoryRequest = {
         title: draft.title,
         location: draft.location,
         date: draft.date,
         category: draft.category,
         description: draft.description,
-        visibility: draft.visibility,
+        visibility: 'private',
         featured: draft.featured,
         status,
         coverObjectKey: coverUpload.objectKey,
@@ -195,16 +228,17 @@ export function StudioPage({ isOwner, ownerCheckLoading, ownerCheckError }: Stud
           sizeBytes: upload.sizeBytes,
           mediaType: upload.mediaType,
           sortOrder: index,
+          visibility: files[index]!.visibility,
         })),
       };
 
-      setProgress(status === 'draft' ? 'Saving draft…' : 'Publishing memory…');
+      setProgress(status === 'draft' ? t('studio.savingDraft') : t('studio.publishing'));
       const memory = await createMemory(request, getToken);
       await queryClient.invalidateQueries({ queryKey: ['memories'] });
       resetForm();
       navigate(status === 'published' ? `/memory/${memory.id}` : '/gallery');
-    } catch (submissionError) {
-      setError(submissionError instanceof Error ? submissionError.message : 'The memory could not be saved.');
+    } catch {
+      setError(t('studio.saveError'));
     } finally {
       setBusy(false);
       setProgress('');
@@ -219,18 +253,18 @@ export function StudioPage({ isOwner, ownerCheckLoading, ownerCheckError }: Stud
   return (
     <main className="studio-page">
       <header className="studio-intro">
-        <p>OWNER STUDIO</p>
-        <h1>Upload a New Memory</h1>
-        <em>Preserve the little moments that mean everything.</em>
+        <p>{t('studio.eyebrow')}</p>
+        <h1>{t('studio.title')}</h1>
+        <em>{t('studio.subtitle')}</em>
       </header>
       <form className="studio-layout" onSubmit={submit}>
         <section className="form-panel">
-          <label className="field-label">1. Upload photos or videos</label>
+          <label className="field-label">{t('studio.uploadStep')}</label>
           <label className="dropzone">
             <CloudUpload size={38} />
-            <strong>Choose photos or videos</strong>
-            <span>click to browse from your device</span>
-            <small>JPEG, PNG, WebP, GIF, MP4, MOV or WebM · up to 20 files</small>
+            <strong>{t('studio.chooseMedia')}</strong>
+            <span>{t('studio.browse')}</span>
+            <small>{t('studio.formats')}</small>
             <input
               type="file"
               multiple
@@ -255,12 +289,26 @@ export function StudioPage({ isOwner, ownerCheckLoading, ownerCheckError }: Stud
                     className="cover-button"
                     type="button"
                     onClick={() => setCoverId(item.id)}
-                    aria-label={`Use ${item.file.name} as cover`}
+                    aria-label={`${t('studio.setCover')}: ${item.file.name}`}
                   >
                     <Star size={13} fill={coverId === item.id ? 'currentColor' : 'none'} />
-                    {coverId === item.id ? 'Cover' : 'Set cover'}
+                    {coverId === item.id ? t('studio.cover') : t('studio.setCover')}
                   </button>
-                  <button className="remove-file-button" type="button" onClick={() => removeFile(item.id)} aria-label={`Remove ${item.file.name}`}>
+                  <button
+                    className={`upload-visibility-button ${item.visibility}`}
+                    type="button"
+                    onClick={() => toggleSelectedVisibility(item.id)}
+                    aria-pressed={item.visibility === 'public'}
+                  >
+                    {item.visibility === 'public' ? <Globe2 size={13} /> : <LockKeyhole size={13} />}
+                    {item.visibility === 'public' ? t('studio.public') : t('studio.private')}
+                  </button>
+                  <button
+                    className="remove-file-button"
+                    type="button"
+                    onClick={() => removeFile(item.id)}
+                    aria-label={t('studio.remove', { filename: item.file.name })}
+                  >
                     <Trash2 size={14} />
                   </button>
                   <small>{item.file.name}<br />{formatBytes(item.file.size)}</small>
@@ -268,105 +316,164 @@ export function StudioPage({ isOwner, ownerCheckLoading, ownerCheckError }: Stud
               ))}
             </div>
           ) : (
-            <div className="upload-empty-hint"><ImagePlus size={18} />Your selected media will appear here.</div>
+            <div className="upload-empty-hint">
+              <ImagePlus size={18} />{t('studio.selectedEmpty')}
+            </div>
           )}
 
           <div className="fields-grid">
             <label>
-              <span>2. Title</span>
-              <input required maxLength={120} value={draft.title} onChange={(event) => setDraft({ ...draft, title: event.target.value })} />
+              <span>{t('studio.titleField')}</span>
+              <input
+                required
+                maxLength={120}
+                value={draft.title}
+                onChange={(event) => setDraft({ ...draft, title: event.target.value })}
+              />
             </label>
             <label>
-              <span>3. Location</span>
-              <div className="input-icon"><MapPin size={16} /><input required maxLength={160} value={draft.location} onChange={(event) => setDraft({ ...draft, location: event.target.value })} /></div>
+              <span>{t('studio.locationField')}</span>
+              <div className="input-icon">
+                <MapPin size={16} />
+                <input
+                  required
+                  maxLength={160}
+                  value={draft.location}
+                  onChange={(event) => setDraft({ ...draft, location: event.target.value })}
+                />
+              </div>
             </label>
             <label>
-              <span>4. Date</span>
-              <div className="input-icon"><CalendarDays size={16} /><input required type="date" value={draft.date} onChange={(event) => setDraft({ ...draft, date: event.target.value })} /></div>
+              <span>{t('studio.dateField')}</span>
+              <div className="input-icon">
+                <CalendarDays size={16} />
+                <input
+                  required
+                  type="date"
+                  value={draft.date}
+                  onChange={(event) => setDraft({ ...draft, date: event.target.value })}
+                />
+              </div>
             </label>
             <label>
-              <span>5. Category</span>
-              <select value={draft.category} onChange={(event) => setDraft({ ...draft, category: event.target.value as MemoryDraft['category'] })}>
-                {MEMORY_CATEGORIES.map((category) => <option key={category}>{category}</option>)}
+              <span>{t('studio.categoryField')}</span>
+              <select
+                value={draft.category}
+                onChange={(event) =>
+                  setDraft({ ...draft, category: event.target.value as MemoryDraft['category'] })
+                }
+              >
+                {MEMORY_CATEGORIES.map((category) => (
+                  <option key={category} value={category}>
+                    {t(categoryTranslationKeys[category])}
+                  </option>
+                ))}
               </select>
             </label>
           </div>
 
           <label className="full-field">
-            <span>6. Short description / notes</span>
-            <textarea maxLength={600} value={draft.description} onChange={(event) => setDraft({ ...draft, description: event.target.value })} />
+            <span>{t('studio.descriptionField')}</span>
+            <textarea
+              maxLength={600}
+              value={draft.description}
+              onChange={(event) => setDraft({ ...draft, description: event.target.value })}
+            />
             <small>{draft.description.length}/600</small>
           </label>
 
-          <fieldset className="visibility-field">
-            <legend>7. Who can see this memory?</legend>
-            <button type="button" className={draft.visibility === 'public' ? 'selected' : ''} onClick={() => setDraft({ ...draft, visibility: 'public' })}>
-              Public <small>Anyone can view and download</small>
-            </button>
-            <button type="button" className={draft.visibility === 'private' ? 'selected' : ''} onClick={() => setDraft({ ...draft, visibility: 'private' })}>
-              <LockKeyhole size={15} />Private <small>Only signed-in owners</small>
-            </button>
-          </fieldset>
-
           <label className="check-row">
-            <input type="checkbox" checked={draft.featured} onChange={(event) => setDraft({ ...draft, featured: event.target.checked })} />
-            <span><strong>Highlight this memory</strong><small>Featured memories may appear on the homepage.</small></span>
+            <input
+              type="checkbox"
+              checked={draft.featured}
+              onChange={(event) => setDraft({ ...draft, featured: event.target.checked })}
+            />
+            <span>
+              <strong>{t('studio.highlight')}</strong>
+              <small>{t('studio.highlightHelp')}</small>
+            </span>
           </label>
 
-          {draft.visibility === 'public' ? (
-            <p className="privacy-warning">Public originals may contain camera metadata. Remove GPS metadata before uploading anything sensitive.</p>
+          {hasPublicMedia ? (
+            <p className="privacy-warning">{t('studio.privacyWarning')}</p>
           ) : null}
           {error ? <div className="form-message error" role="alert">{error}</div> : null}
           {progress ? <div className="form-message" aria-live="polite">{progress}</div> : null}
 
           <div className="form-actions">
-            <button type="button" className="quiet-button" onClick={resetForm} disabled={busy}>Cancel</button>
-            <button type="button" className="secondary-button" onClick={() => void saveMemory('draft')} disabled={busy}>
-              <Save size={16} />Save Draft
+            <button type="button" className="quiet-button" onClick={resetForm} disabled={busy}>
+              {t('studio.cancel')}
+            </button>
+            <button
+              type="button"
+              className="secondary-button"
+              onClick={() => void saveMemory('draft')}
+              disabled={busy}
+            >
+              <Save size={16} />{t('studio.saveDraft')}
             </button>
             <button type="submit" className="primary-button" disabled={busy}>
-              <Send size={16} />Publish Memory <Heart size={15} />
+              <Send size={16} />{t('studio.publish')} <Heart size={15} />
             </button>
           </div>
         </section>
 
         <aside className="preview-panel">
-          <div className="preview-heading"><h2>Preview</h2><p>This is how it will appear in your gallery. ♡</p></div>
+          <div className="preview-heading">
+            <h2>{t('studio.preview')}</h2>
+            <p>{t('studio.previewHelp')}</p>
+          </div>
           <article className="preview-card">
             <div className="preview-media">
               {cover ? (
-                cover.file.type.startsWith('video/') ? <video src={cover.previewUrl} controls /> : <img src={cover.previewUrl} alt="Memory preview" />
+                cover.file.type.startsWith('video/')
+                  ? <video src={cover.previewUrl} controls />
+                  : <img src={cover.previewUrl} alt={draft.title || t('studio.untitled')} />
               ) : (
-                <div className="preview-placeholder"><ImagePlus size={42} /><span>Choose a cover photo or video</span></div>
+                <div className="preview-placeholder">
+                  <ImagePlus size={42} /><span>{t('studio.chooseCover')}</span>
+                </div>
               )}
-              <span className={`visibility-badge ${draft.visibility}`}>
-                {draft.visibility === 'private' ? <LockKeyhole size={12} /> : null}{draft.visibility}
-              </span>
+              {cover ? (
+                <span className={`visibility-badge ${cover.visibility}`}>
+                  {cover.visibility === 'private' ? <LockKeyhole size={12} /> : <Globe2 size={12} />}
+                  {cover.visibility === 'private' ? t('studio.private') : t('studio.public')}
+                </span>
+              ) : null}
             </div>
             <div className="preview-copy">
-              <h3>{draft.title || 'Untitled Memory'}</h3>
+              <h3>{draft.title || t('studio.untitled')}</h3>
               <div>
-                <span><MapPin size={14} />{draft.location || 'Location'}</span>
-                <span><CalendarDays size={14} />{draft.date}</span>
+                <span><MapPin size={14} />{draft.location || t('studio.locationPlaceholder')}</span>
+                <span><CalendarDays size={14} />{formatMemoryDate(draft.date, language)}</span>
               </div>
-              <p>{draft.description || 'Add a few words about this memory.'}</p>
+              <p>{draft.description || t('studio.descriptionPlaceholder')}</p>
             </div>
           </article>
-          <div className="preview-note">Take your time to add the perfect details.<br /><em>The best memories are the ones we never want to forget. ♡</em></div>
+          <div className="preview-note">
+            {t('studio.previewNote')}<br />
+            <em>{t('studio.previewQuote')}</em>
+          </div>
         </aside>
       </form>
     </main>
   );
 }
 
-function validateSelectedFiles(files: File[]) {
-  if (files.length === 0) throw new Error('Choose at least one file.');
-  if (files.length > 20) throw new Error('A memory can contain up to 20 files.');
-  for (const file of files) {
-    if (!ACCEPTED_TYPES.has(file.type)) throw new Error(`${file.name} uses an unsupported file type.`);
+function validateSelectedFiles(selectedFiles: File[], t: Translator) {
+  if (selectedFiles.length === 0) throw new Error(t('studio.chooseAtLeastOne'));
+  if (selectedFiles.length > 20) throw new Error(t('studio.maxFiles'));
+  for (const file of selectedFiles) {
+    if (!ACCEPTED_TYPES.has(file.type)) {
+      throw new Error(t('studio.unsupportedType', { filename: file.name }));
+    }
     const limit = file.type.startsWith('image/') ? MAX_IMAGE_BYTES : MAX_VIDEO_BYTES;
     if (file.size > limit) {
-      throw new Error(file.type.startsWith('image/') ? `${file.name} exceeds 50 MiB.` : `${file.name} exceeds 2 GiB.`);
+      throw new Error(
+        file.type.startsWith('image/')
+          ? t('studio.imageTooLarge', { filename: file.name })
+          : t('studio.videoTooLarge', { filename: file.name }),
+      );
     }
   }
 }

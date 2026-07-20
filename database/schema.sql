@@ -36,6 +36,7 @@ CREATE TABLE IF NOT EXISTS media_assets (
   height INTEGER,
   duration_seconds REAL,
   sort_order INTEGER NOT NULL DEFAULT 0 CHECK (sort_order >= 0),
+  visibility TEXT NOT NULL DEFAULT 'private' CHECK (visibility IN ('public','private')),
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (memory_id) REFERENCES memories(id) ON DELETE CASCADE
 );
@@ -46,3 +47,5 @@ CREATE INDEX IF NOT EXISTS idx_memories_featured_date
   ON memories(is_featured, taken_at DESC);
 CREATE INDEX IF NOT EXISTS idx_assets_memory_sort
   ON media_assets(memory_id, sort_order);
+CREATE INDEX IF NOT EXISTS idx_assets_memory_visibility_sort
+  ON media_assets(memory_id, visibility, sort_order);

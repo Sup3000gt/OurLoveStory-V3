@@ -1,15 +1,24 @@
-﻿import { useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import type { Memory } from '../../shared/contracts';
 import { MEMORY_CATEGORIES } from '../../shared/contracts';
 import { GalleryGrid } from '../components/GalleryGrid';
+import { categoryTranslationKeys } from '../i18n/translations';
+import { useTranslation } from '../i18n/useTranslation';
 
 interface GalleryPageProps {
   memories: Memory[];
   isLoading: boolean;
   error: Error | null;
+  isOwner: boolean;
 }
 
-export function GalleryPage({ memories, isLoading, error }: GalleryPageProps) {
+export function GalleryPage({
+  memories,
+  isLoading,
+  error,
+  isOwner,
+}: GalleryPageProps) {
+  const { t } = useTranslation();
   const [category, setCategory] = useState<string>('All');
   const categories = ['All', ...MEMORY_CATEGORIES];
   const filtered = useMemo(
@@ -20,23 +29,35 @@ export function GalleryPage({ memories, isLoading, error }: GalleryPageProps) {
   return (
     <main className="page-shell">
       <header className="page-intro">
-        <p>OUR COLLECTION</p>
-        <h1>Every memory has a place here.</h1>
-        <span>Photos, food, travels, quiet evenings, and everything in between.</span>
+        <p>{t('gallery.eyebrow')}</p>
+        <h1>{t('gallery.title')}</h1>
+        <span>{t('gallery.subtitle')}</span>
       </header>
-      <div className="filter-row" role="group" aria-label="Filter memories by category">
-        {categories.map((item) => (
-          <button key={item} className={category === item ? 'active' : ''} onClick={() => setCategory(item)}>
-            {item}
-          </button>
-        ))}
+      <div className="filter-row" role="group" aria-label={t('gallery.filterLabel')}>
+        {categories.map((item) => {
+          const label = item === 'All'
+            ? t('gallery.all')
+            : t(categoryTranslationKeys[item as keyof typeof categoryTranslationKeys]);
+          return (
+            <button
+              key={item}
+              className={category === item ? 'active' : ''}
+              onClick={() => setCategory(item)}
+              type="button"
+            >
+              {label}
+            </button>
+          );
+        })}
       </div>
-      {isLoading ? <div className="gallery-status">Gathering our memories…</div> : null}
-      {error ? <div className="gallery-status error">{error.message}</div> : null}
+      {isLoading ? <div className="gallery-status">{t('gallery.loading')}</div> : null}
+      {error ? <div className="gallery-status error">{t('gallery.loadError')}</div> : null}
       {!isLoading && !error && filtered.length === 0 ? (
-        <div className="gallery-status">There are no memories in this collection yet.</div>
+        <div className="gallery-status">{t('gallery.empty')}</div>
       ) : null}
-      {filtered.length > 0 ? <GalleryGrid memories={filtered} variant="masonry" /> : null}
+      {filtered.length > 0 ? (
+        <GalleryGrid memories={filtered} variant="masonry" isOwner={isOwner} />
+      ) : null}
     </main>
   );
 }

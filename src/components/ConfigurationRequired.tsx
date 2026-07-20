@@ -1,14 +1,14 @@
 import { KeyRound } from 'lucide-react';
+import { useTranslation } from '../i18n/useTranslation';
 
 export function ConfigurationRequired() {
+  const { t } = useTranslation();
+
   return (
     <main className="configuration-required">
       <KeyRound size={42} />
-      <h1>One small setup step remains.</h1>
-      <p>
-        Add your Clerk publishable key to <code>VITE_CLERK_PUBLISHABLE_KEY</code>, then restart the app.
-        The secret key belongs only in Cloudflare Worker secrets.
-      </p>
+      <h1>{t('config.title')}</h1>
+      <p>{t('config.body')}</p>
     </main>
   );
 }
