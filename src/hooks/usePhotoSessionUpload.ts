@@ -859,6 +859,56 @@ export function usePhotoSessionUpload() {
     ],
   );
 
+  const adoptServerSession = useCallback(
+    (
+      nextSession:
+        UploadSession,
+    ) => {
+      const current =
+        photosRef.current;
+
+      if (
+        current.length === 0
+      ) {
+        setSession(
+          nextSession,
+        );
+        return;
+      }
+
+      const belongsToSession =
+        current.every(
+          (photo) =>
+            photo.sessionFileId
+            !== null
+            && nextSession.files
+              .some(
+                (file) =>
+                  file.id
+                  === photo
+                    .sessionFileId,
+              ),
+        );
+
+      if (
+        !belongsToSession
+      ) {
+        return;
+      }
+
+      replacePhotos(
+        bindSelectedPhotos(
+          current,
+          nextSession,
+        ),
+      );
+
+      setSession(
+        nextSession,
+      );
+    },
+    [replacePhotos],
+  );
   const setVisibility = useCallback(
     async (
       localId: string,
@@ -1040,6 +1090,7 @@ export function usePhotoSessionUpload() {
     resume,
     resumeAndUpload,
     uploadPending,
+    adoptServerSession,
     setVisibility,
     keepDuplicate,
     removePhoto,
