@@ -18,6 +18,12 @@ describe('translate', () => {
     expect(translate('zh', 'studio.publish')).toBe('保存这段回忆');
   });
 
+  it('uses natural copy for destructive confirmation', () => {
+    expect(translate('zh', 'detail.deleteConfirm')).toBe(
+      '确定删除这张照片或视频吗？\n删除后无法恢复。',
+    );
+  });
+
   it('interpolates values in both languages', () => {
     expect(
       translate('zh', 'memory.assetSummary', { publicCount: 3, privateCount: 7 }),

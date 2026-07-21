@@ -2,6 +2,7 @@ import type { Env } from './env';
 import { optionalOwner, requireOwner, resolveOwnerSession } from './lib/auth';
 import {
   createMemory,
+  deleteAsset,
   deleteMemory,
   getMemory,
   listMemories,
@@ -83,8 +84,12 @@ export default {
           await requireOwner(request, env);
           return json(await updateAssetVisibility(request, env, assetId));
         }
+        if (request.method === 'DELETE') {
+          await requireOwner(request, env);
+          return json(await deleteAsset(env, assetId, ctx));
+        }
         if (request.method !== 'GET' && request.method !== 'HEAD') {
-          return methodNotAllowed(['GET', 'HEAD', 'PATCH']);
+          return methodNotAllowed(['GET', 'HEAD', 'PATCH', 'DELETE']);
         }
         return serveAsset(request, env, assetId, false);
       }

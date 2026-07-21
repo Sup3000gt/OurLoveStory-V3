@@ -4,11 +4,16 @@ import { getOwnerSession } from '../lib/api';
 
 export function useOwnerSession() {
   const { isLoaded, isSignedIn, getToken } = useAuth();
+
   return useQuery({
     queryKey: ['owner-session', isSignedIn],
     queryFn: () => getOwnerSession(getToken),
-    enabled: isLoaded && Boolean(isSignedIn),
-    staleTime: 60_000,
-    retry: 1,
+    enabled: isLoaded && isSignedIn === true,
+    staleTime: 0,
+    retry: 3,
+    retryDelay: (attempt) => Math.min(500 * 2 ** attempt, 2_000),
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
   });
 }

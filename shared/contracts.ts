@@ -122,6 +122,13 @@ export interface UpdateAssetVisibilityResponse {
   visibility: Visibility;
 }
 
+export interface DeleteAssetResponse {
+  deletedAssetId: string;
+  deletedMemory: boolean;
+  memoryId: string;
+  replacementCoverAssetId: string | null;
+}
+
 export interface ApiErrorBody {
   error: string;
   details?: string[];

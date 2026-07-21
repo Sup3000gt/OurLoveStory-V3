@@ -1,5 +1,6 @@
 import type {
   AuthorizeUploadsResponse,
+  DeleteAssetResponse,
   CreateMemoryRequest,
   Memory,
   OwnerSession,
@@ -7,12 +8,16 @@ import type {
   UploadFileRequest,
   Visibility,
 } from '../../shared/contracts';
+import { requireOwnerSessionToken } from './owner-session';
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '/api').replace(/\/$/, '');
 export type GetToken = () => Promise<string | null>;
 
 export async function getOwnerSession(getToken: GetToken): Promise<OwnerSession> {
-  return apiRequest<OwnerSession>('/session', getToken);
+  const token = await requireOwnerSessionToken(getToken);
+  return apiRequest<OwnerSession>('/session', undefined, {
+    headers: { authorization: `Bearer ${token}` },
+  });
 }
 
 export async function getMemories(getToken?: GetToken): Promise<Memory[]> {
@@ -59,6 +64,17 @@ export async function updateAssetVisibility(
       method: 'PATCH',
       body: JSON.stringify({ visibility }),
     },
+  );
+}
+
+export async function deleteMemoryAsset(
+  assetId: string,
+  getToken: GetToken,
+): Promise<DeleteAssetResponse> {
+  return apiRequest<DeleteAssetResponse>(
+    `/assets/${encodeURIComponent(assetId)}`,
+    getToken,
+    { method: 'DELETE' },
   );
 }
 

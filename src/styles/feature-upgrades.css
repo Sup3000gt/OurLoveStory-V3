@@ -151,3 +151,48 @@
     margin-block: 5px;
   }
 }
+
+/* Owner session and asset deletion */
+.asset-delete-button {
+  min-height: 38px;
+  padding: 8px 13px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid rgba(165, 70, 62, .24);
+  border-radius: 999px;
+  color: #9a443c;
+  background: #fff1ee;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 650;
+  cursor: pointer;
+  transition: transform .16s ease, box-shadow .16s ease, background .16s ease;
+}
+
+.asset-delete-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  background: #ffe7e2;
+  box-shadow: 0 7px 18px rgba(125, 52, 45, .13);
+}
+
+.asset-delete-button:disabled {
+  cursor: wait;
+  opacity: .68;
+}
+
+.asset-delete-error {
+  width: fit-content;
+  margin-top: 12px !important;
+  padding: 9px 12px;
+  border-radius: 10px;
+  color: #8c3e35 !important;
+  background: #fff0ed;
+}
+
+@media (max-width: 620px) {
+  .asset-delete-button {
+    width: 100%;
+  }
+}

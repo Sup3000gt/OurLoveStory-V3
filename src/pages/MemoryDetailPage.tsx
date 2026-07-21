@@ -7,14 +7,16 @@ import {
   Globe2,
   LockKeyhole,
   MapPin,
+  Trash2,
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import type { Memory, MemoryAsset, Visibility } from '../../shared/contracts';
 import { categoryTranslationKeys } from '../i18n/translations';
 import { useTranslation } from '../i18n/useTranslation';
-import { updateAssetVisibility } from '../lib/api';
+import { deleteMemoryAsset, updateAssetVisibility } from '../lib/api';
 import { formatMemoryDate } from '../lib/format';
+import { applyAssetDeletion } from '../lib/memory-assets';
 import { replaceAssetVisibility } from '../lib/memory-visibility';
 
 interface MemoryDetailPageProps {
@@ -31,23 +33,28 @@ export function MemoryDetailPage({
   const { memoryId } = useParams();
   const { getToken } = useAuth();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const { language, t } = useTranslation();
   const [pendingAssetId, setPendingAssetId] = useState<string | null>(null);
+  const [pendingDeleteAssetId, setPendingDeleteAssetId] = useState<string | null>(null);
   const [updatedAssetId, setUpdatedAssetId] = useState<string | null>(null);
   const [visibilityError, setVisibilityError] = useState('');
+  const [deleteError, setDeleteError] = useState('');
   const successTimer = useRef<number | null>(null);
   const memory = memories.find((candidate) => candidate.id === memoryId);
+  const interactionBusy = pendingAssetId !== null || pendingDeleteAssetId !== null;
 
   useEffect(() => () => {
     if (successTimer.current !== null) window.clearTimeout(successTimer.current);
   }, []);
 
   async function toggleVisibility(asset: MemoryAsset) {
-    if (!isOwner || pendingAssetId) return;
+    if (!isOwner || interactionBusy) return;
     const nextVisibility: Visibility = asset.visibility === 'public' ? 'private' : 'public';
     const snapshots = queryClient.getQueriesData<Memory[]>({ queryKey: ['memories'] });
 
     setVisibilityError('');
+    setDeleteError('');
     setUpdatedAssetId(null);
     setPendingAssetId(asset.id);
     queryClient.setQueriesData<Memory[]>(
@@ -68,6 +75,33 @@ export function MemoryDetailPage({
       setVisibilityError(t('detail.saveFailed'));
     } finally {
       setPendingAssetId(null);
+    }
+  }
+
+  async function removeAsset(asset: MemoryAsset) {
+    if (!isOwner || interactionBusy || !memory) return;
+    if (!window.confirm(t('detail.deleteConfirm'))) return;
+
+    setVisibilityError('');
+    setDeleteError('');
+    setUpdatedAssetId(null);
+    setPendingDeleteAssetId(asset.id);
+
+    try {
+      const response = await deleteMemoryAsset(asset.id, getToken);
+      queryClient.setQueriesData<Memory[]>(
+        { queryKey: ['memories'] },
+        (current) => current ? applyAssetDeletion(current, response) : current,
+      );
+      await queryClient.invalidateQueries({ queryKey: ['memories'] });
+
+      if (response.deletedMemory) {
+        navigate('/gallery', { replace: true });
+      }
+    } catch {
+      setDeleteError(t('detail.deleteFailed'));
+    } finally {
+      setPendingDeleteAssetId(null);
     }
   }
 
@@ -105,6 +139,9 @@ export function MemoryDetailPage({
         {visibilityError ? (
           <p className="asset-visibility-error" role="alert">{visibilityError}</p>
         ) : null}
+        {deleteError ? (
+          <p className="asset-delete-error" role="alert">{deleteError}</p>
+        ) : null}
       </header>
 
       <section className="asset-gallery" aria-label={t('detail.mediaLabel', { title: memory.title })}>
@@ -121,27 +158,41 @@ export function MemoryDetailPage({
               <span className="asset-filename" title={asset.filename}>{asset.filename}</span>
               <div className="asset-footer-actions">
                 {isOwner ? (
-                  <button
-                    className={`asset-visibility-toggle ${asset.visibility}`}
-                    type="button"
-                    aria-pressed={asset.visibility === 'public'}
-                    aria-label={
-                      asset.visibility === 'public'
-                        ? t('detail.makePrivate')
-                        : t('detail.makePublic')
-                    }
-                    disabled={pendingAssetId !== null}
-                    onClick={() => void toggleVisibility(asset)}
-                  >
-                    {asset.visibility === 'public' ? <Globe2 size={16} /> : <LockKeyhole size={16} />}
-                    {pendingAssetId === asset.id
-                      ? t('detail.saving')
-                      : updatedAssetId === asset.id
-                        ? t('detail.updated')
-                        : asset.visibility === 'public'
-                          ? t('memory.public')
-                          : t('memory.private')}
-                  </button>
+                  <>
+                    <button
+                      className={`asset-visibility-toggle ${asset.visibility}`}
+                      type="button"
+                      aria-pressed={asset.visibility === 'public'}
+                      aria-label={
+                        asset.visibility === 'public'
+                          ? t('detail.makePrivate')
+                          : t('detail.makePublic')
+                      }
+                      disabled={interactionBusy}
+                      onClick={() => void toggleVisibility(asset)}
+                    >
+                      {asset.visibility === 'public' ? <Globe2 size={16} /> : <LockKeyhole size={16} />}
+                      {pendingAssetId === asset.id
+                        ? t('detail.saving')
+                        : updatedAssetId === asset.id
+                          ? t('detail.updated')
+                          : asset.visibility === 'public'
+                            ? t('memory.public')
+                            : t('memory.private')}
+                    </button>
+                    <button
+                      className="asset-delete-button"
+                      type="button"
+                      aria-label={t('detail.deleteAssetLabel', { filename: asset.filename })}
+                      disabled={interactionBusy}
+                      onClick={() => void removeAsset(asset)}
+                    >
+                      <Trash2 size={16} />
+                      {pendingDeleteAssetId === asset.id
+                        ? t('detail.deleting')
+                        : t('detail.delete')}
+                    </button>
+                  </>
                 ) : null}
                 <a
                   className="secondary-button"

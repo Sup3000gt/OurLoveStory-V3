@@ -1,6 +1,7 @@
 import {
   MEMORY_CATEGORIES,
   type CreateMemoryRequest,
+  type DeleteAssetResponse,
   type Memory,
   type MemoryAsset,
   type UpdateAssetVisibilityResponse,
@@ -8,6 +9,7 @@ import {
 } from '../../shared/contracts';
 import type { Env, OwnerIdentity } from '../env';
 import { optionalOwner } from './auth';
+import { planAssetDeletion } from './asset-deletion';
 import { resolveVisibleCoverAssetId } from './asset-visibility';
 import { HttpError, noContent, notFound } from './responses';
 import {
@@ -57,6 +59,17 @@ interface ObjectKeyRow {
 interface AssetOwnerRow {
   asset_id: string;
   memory_id: string;
+}
+
+interface AssetDeletionTargetRow {
+  memory_id: string;
+  object_key: string;
+  cover_asset_id: string;
+}
+
+interface AssetOrderRow {
+  id: string;
+  sort_order: number;
 }
 
 export async function listMemories(env: Env, isOwner: boolean): Promise<Memory[]> {
@@ -293,6 +306,98 @@ export async function updateAssetVisibility(
   ]);
 
   return { assetId, visibility: input.visibility };
+}
+
+export async function deleteAsset(
+  env: Env,
+  assetId: string,
+  ctx: ExecutionContext,
+): Promise<DeleteAssetResponse> {
+  const target = await env.DB.prepare(`
+    SELECT
+      a.memory_id,
+      a.object_key,
+      m.cover_asset_id
+    FROM media_assets a
+    INNER JOIN memories m ON m.id = a.memory_id
+    WHERE a.id = ?
+    LIMIT 1
+  `)
+    .bind(assetId)
+    .first<AssetDeletionTargetRow>();
+
+  if (!target) throw new HttpError(404, 'Asset not found.');
+
+  const assetRows = await env.DB.prepare(`
+    SELECT id, sort_order
+    FROM media_assets
+    WHERE memory_id = ?
+    ORDER BY sort_order ASC
+  `)
+    .bind(target.memory_id)
+    .all<AssetOrderRow>();
+
+  const plan = planAssetDeletion(
+    assetRows.results.map((asset) => ({ id: asset.id, sortOrder: asset.sort_order })),
+    assetId,
+    target.cover_asset_id,
+  );
+
+  if (plan.deleteMemory) {
+    const result = await env.DB.prepare('DELETE FROM memories WHERE id = ?')
+      .bind(target.memory_id)
+      .run();
+    if (!result.meta.changes) throw new HttpError(404, 'Memory not found.');
+
+    ctx.waitUntil(
+      Promise.allSettled([env.MEDIA.delete(target.object_key)]).then(() => undefined),
+    );
+
+    return {
+      deletedAssetId: assetId,
+      deletedMemory: true,
+      memoryId: target.memory_id,
+      replacementCoverAssetId: null,
+    };
+  }
+
+  const statements: D1PreparedStatement[] = [];
+  if (plan.replacementCoverAssetId) {
+    statements.push(
+      env.DB.prepare(`
+        UPDATE memories
+        SET cover_asset_id = ?, updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+      `).bind(plan.replacementCoverAssetId, target.memory_id),
+    );
+  } else {
+    statements.push(
+      env.DB.prepare(`
+        UPDATE memories
+        SET updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+      `).bind(target.memory_id),
+    );
+  }
+
+  statements.push(
+    env.DB.prepare('DELETE FROM media_assets WHERE id = ?').bind(assetId),
+  );
+
+  const results = await env.DB.batch(statements);
+  const deleteResult = results[results.length - 1];
+  if (!deleteResult?.meta.changes) throw new HttpError(404, 'Asset not found.');
+
+  ctx.waitUntil(
+    Promise.allSettled([env.MEDIA.delete(target.object_key)]).then(() => undefined),
+  );
+
+  return {
+    deletedAssetId: assetId,
+    deletedMemory: false,
+    memoryId: target.memory_id,
+    replacementCoverAssetId: plan.replacementCoverAssetId,
+  };
 }
 
 export async function deleteMemory(
