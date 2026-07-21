@@ -30,6 +30,7 @@ import {
 } from '../lib/photo-session-upload';
 import {
   bindLocalPhotosToSession,
+  hasCompleteUploadSessionMatch,
   preparePhotoMetadata,
   type BoundLocalPhoto,
   type LocalPhotoStatus,
@@ -596,10 +597,7 @@ export function usePhotoSessionUpload() {
             getToken,
           );
 
-        if (
-          match.missingSessionFileIds.length > 0
-          || match.unmatchedLocalIds.length > 0
-        ) {
+        if (!hasCompleteUploadSessionMatch(match)) {
           for (const photo of previews) {
             URL.revokeObjectURL(
               photo.previewUrl,
@@ -709,10 +707,7 @@ export function usePhotoSessionUpload() {
             getToken,
           );
 
-        if (
-          match.missingSessionFileIds.length > 0
-          || match.unmatchedLocalIds.length > 0
-        ) {
+        if (!hasCompleteUploadSessionMatch(match)) {
           throw new Error(
             'Reselect every original photo from this upload Session.',
           );

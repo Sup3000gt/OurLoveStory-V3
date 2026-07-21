@@ -215,3 +215,24 @@ export function localStatusForSessionFile(
       return 'skipped';
   }
 }
+
+export interface UploadSessionMatchSummary {
+  missingSessionFileIds:
+    readonly string[];
+  unmatchedLocalIds:
+    readonly string[];
+}
+
+export function hasCompleteUploadSessionMatch(
+  match:
+    UploadSessionMatchSummary,
+): boolean {
+  return (
+    match
+      .missingSessionFileIds
+      .length === 0
+    && match
+      .unmatchedLocalIds
+      .length === 0
+  );
+}
