@@ -17,6 +17,7 @@ import { type FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   MEMORY_CATEGORIES,
+  type AuthorizedUpload,
   type CreateMemoryRequest,
   type MemoryStatus,
   type Visibility,
@@ -27,8 +28,19 @@ import {
   type TranslationValues,
 } from '../i18n/translations';
 import { useTranslation } from '../i18n/useTranslation';
-import { authorizeUploads, createMemory, uploadFileDirectly } from '../lib/api';
+import {
+  authorizeUploads,
+  createMemory,
+  DirectUploadError,
+  uploadFileDirectly,
+} from '../lib/api';
 import { formatMemoryDate } from '../lib/format';
+import {
+  ReliableUploadAuthorizationError,
+  ReliableUploadBatchError,
+  uploadBatchReliably,
+  type ReliableUploadEvent,
+} from '../lib/reliable-upload';
 
 const ACCEPTED_TYPES = new Set([
   'image/jpeg',
@@ -51,11 +63,16 @@ interface MemoryDraft {
   featured: boolean;
 }
 
+type SelectedUploadState = 'idle' | 'uploading' | 'uploaded' | 'failed';
+
 interface SelectedMedia {
   id: string;
   file: File;
   previewUrl: string;
   visibility: Visibility;
+  upload?: AuthorizedUpload;
+  uploadState: SelectedUploadState;
+  uploadMessage: string;
 }
 
 const initialDraft: MemoryDraft = {
@@ -145,6 +162,8 @@ export function StudioPage({
         file,
         previewUrl: URL.createObjectURL(file),
         visibility: 'private' as const,
+        uploadState: 'idle' as const,
+        uploadMessage: '',
       }));
       setFiles(next);
       setCoverId(next[0]?.id ?? null);
@@ -194,21 +213,32 @@ export function StudioPage({
     setBusy(true);
     try {
       setProgress(t('studio.preparing'));
-      const authorization = await authorizeUploads(files.map((item) => item.file), getToken);
-      for (let index = 0; index < authorization.uploads.length; index += 1) {
-        const upload = authorization.uploads[index];
-        const selected = files[index];
-        if (!upload || !selected) throw new Error('Upload authorization mismatch.');
-        setProgress(t('studio.uploading', {
-          current: index + 1,
-          total: files.length,
-          filename: selected.file.name,
-        }));
-        await uploadFileDirectly(upload.uploadUrl, upload.headers, selected.file);
+
+      const uploadsById = await uploadBatchReliably<File, AuthorizedUpload>({
+        items: files.map((item) => ({
+          id: item.id,
+          file: item.file,
+          completedUpload: item.uploadState === 'uploaded' ? item.upload : undefined,
+        })),
+        authorize: async (selectedFiles) =>
+          (await authorizeUploads(selectedFiles, getToken)).uploads,
+        upload: async (upload, file) =>
+          uploadFileDirectly(upload.uploadUrl, upload.headers, file),
+        shouldReauthorize: (uploadError) =>
+          uploadError instanceof DirectUploadError
+          && (uploadError.status === 401 || uploadError.status === 403),
+        getFileName: (file) => file.name,
+        concurrency: 3,
+        maxRetries: 3,
+        onEvent: (event) => updateSelectedUpload(event),
+      });
+
+      const orderedUploads = files.map((item) => uploadsById.get(item.id));
+      if (orderedUploads.some((upload) => !upload)) {
+        throw new Error('One or more completed uploads could not be matched.');
       }
 
-      const coverIndex = files.findIndex((item) => item.id === cover.id);
-      const coverUpload = authorization.uploads[coverIndex];
+      const coverUpload = uploadsById.get(cover.id);
       if (!coverUpload) throw new Error('Cover upload mismatch.');
 
       const request: CreateMemoryRequest = {
@@ -221,12 +251,12 @@ export function StudioPage({
         featured: draft.featured,
         status,
         coverObjectKey: coverUpload.objectKey,
-        assets: authorization.uploads.map((upload, index) => ({
-          objectKey: upload.objectKey,
-          originalFilename: upload.originalFilename,
+        assets: orderedUploads.map((upload, index) => ({
+          objectKey: upload!.objectKey,
+          originalFilename: upload!.originalFilename,
           mimeType: files[index]!.file.type,
-          sizeBytes: upload.sizeBytes,
-          mediaType: upload.mediaType,
+          sizeBytes: upload!.sizeBytes,
+          mediaType: upload!.mediaType,
           sortOrder: index,
           visibility: files[index]!.visibility,
         })),
@@ -237,11 +267,69 @@ export function StudioPage({
       await queryClient.invalidateQueries({ queryKey: ['memories'] });
       resetForm();
       navigate(status === 'published' ? `/memory/${memory.id}` : '/gallery');
-    } catch {
-      setError(t('studio.saveError'));
+    } catch (submissionError) {
+      if (submissionError instanceof ReliableUploadBatchError) {
+        setError(t('studio.fileUploadFailed', {
+          filename: submissionError.filename,
+          reason: describeUploadFailure(submissionError.originalError, t),
+        }));
+      } else if (submissionError instanceof ReliableUploadAuthorizationError) {
+        setError(t('studio.prepareUploadFailed'));
+      } else {
+        setError(t('studio.saveError'));
+      }
     } finally {
       setBusy(false);
       setProgress('');
+    }
+  }
+
+  function updateSelectedUpload(event: ReliableUploadEvent<AuthorizedUpload>) {
+    const uploadState: SelectedUploadState =
+      event.state === 'uploaded'
+        ? 'uploaded'
+        : event.state === 'failed'
+          ? 'failed'
+          : 'uploading';
+
+    const uploadMessage =
+      event.state === 'uploaded'
+        ? t('studio.uploaded')
+        : event.state === 'failed'
+          ? t('studio.uploadFailedShort')
+          : event.state === 'retrying'
+            ? t('studio.retryingUpload', {
+                filename: event.filename,
+                retry: event.retry,
+                maxRetries: event.maxRetries,
+              })
+            : t('studio.uploadingShort');
+
+    setFiles((current) =>
+      current.map((item) =>
+        item.id === event.id
+          ? {
+              ...item,
+              upload: event.upload ?? item.upload,
+              uploadState,
+              uploadMessage,
+            }
+          : item,
+      ),
+    );
+
+    if (event.state === 'retrying') {
+      setProgress(t('studio.retryingUpload', {
+        filename: event.filename,
+        retry: event.retry,
+        maxRetries: event.maxRetries,
+      }));
+    } else if (event.state === 'uploading' || event.state === 'uploaded') {
+      setProgress(t('studio.uploadProgress', {
+        filename: event.filename,
+        completed: event.completed,
+        total: event.total,
+      }));
     }
   }
 
@@ -290,6 +378,7 @@ export function StudioPage({
                     type="button"
                     onClick={() => setCoverId(item.id)}
                     aria-label={`${t('studio.setCover')}: ${item.file.name}`}
+                    disabled={busy}
                   >
                     <Star size={13} fill={coverId === item.id ? 'currentColor' : 'none'} />
                     {coverId === item.id ? t('studio.cover') : t('studio.setCover')}
@@ -299,6 +388,7 @@ export function StudioPage({
                     type="button"
                     onClick={() => toggleSelectedVisibility(item.id)}
                     aria-pressed={item.visibility === 'public'}
+                    disabled={busy}
                   >
                     {item.visibility === 'public' ? <Globe2 size={13} /> : <LockKeyhole size={13} />}
                     {item.visibility === 'public' ? t('studio.public') : t('studio.private')}
@@ -308,10 +398,16 @@ export function StudioPage({
                     type="button"
                     onClick={() => removeFile(item.id)}
                     aria-label={t('studio.remove', { filename: item.file.name })}
+                    disabled={busy}
                   >
                     <Trash2 size={14} />
                   </button>
                   <small>{item.file.name}<br />{formatBytes(item.file.size)}</small>
+                  {item.uploadState !== 'idle' ? (
+                    <span className={`selected-upload-state ${item.uploadState}`}>
+                      {item.uploadMessage}
+                    </span>
+                  ) : null}
                 </article>
               ))}
             </div>
@@ -476,6 +572,20 @@ function validateSelectedFiles(selectedFiles: File[], t: Translator) {
       );
     }
   }
+}
+
+function describeUploadFailure(error: unknown, t: Translator): string {
+  if (error instanceof DirectUploadError) {
+    if (error.status === 401 || error.status === 403) {
+      return t('studio.uploadLinkExpired');
+    }
+    if (error.status !== null) {
+      return t('studio.uploadServerError', { status: error.status });
+    }
+    return t('studio.uploadNetworkError');
+  }
+
+  return t('studio.uploadNetworkError');
 }
 
 function formatBytes(bytes: number): string {

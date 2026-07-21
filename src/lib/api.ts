@@ -1,7 +1,7 @@
 import type {
   AuthorizeUploadsResponse,
-  DeleteAssetResponse,
   CreateMemoryRequest,
+  DeleteAssetResponse,
   Memory,
   OwnerSession,
   UpdateAssetVisibilityResponse,
@@ -12,6 +12,28 @@ import { requireOwnerSessionToken } from './owner-session';
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '/api').replace(/\/$/, '');
 export type GetToken = () => Promise<string | null>;
+
+export class DirectUploadError extends Error {
+  readonly filename: string;
+  readonly status: number | null;
+  readonly originalError: unknown;
+
+  constructor(
+    filename: string,
+    status: number | null,
+    originalError: unknown = null,
+  ) {
+    super(
+      status === null
+        ? `Network error while uploading ${filename}.`
+        : `Upload failed for ${filename} (${status}).`,
+    );
+    this.name = 'DirectUploadError';
+    this.filename = filename;
+    this.status = status;
+    this.originalError = originalError;
+  }
+}
 
 export async function getOwnerSession(getToken: GetToken): Promise<OwnerSession> {
   const token = await requireOwnerSessionToken(getToken);
@@ -83,9 +105,19 @@ export async function uploadFileDirectly(
   headers: Record<string, string>,
   file: File,
 ): Promise<void> {
-  const response = await fetch(uploadUrl, { method: 'PUT', headers, body: file });
+  let response: Response;
+  try {
+    response = await fetch(uploadUrl, {
+      method: 'PUT',
+      headers,
+      body: file,
+    });
+  } catch (error) {
+    throw new DirectUploadError(file.name, null, error);
+  }
+
   if (!response.ok) {
-    throw new Error(`Upload failed for ${file.name} (${response.status}).`);
+    throw new DirectUploadError(file.name, response.status);
   }
 }
 
@@ -96,9 +128,10 @@ async function apiRequest<T>(
 ): Promise<T> {
   const headers = new Headers(init.headers);
   if (init.body) headers.set('content-type', 'application/json');
+
   if (getToken) {
-    const token = await getToken();
-    if (token) headers.set('authorization', `Bearer ${token}`);
+    const token = await requireOwnerSessionToken(getToken);
+    headers.set('authorization', `Bearer ${token}`);
   }
 
   const response = await fetch(`${API_BASE_URL}${path}`, {
@@ -106,6 +139,7 @@ async function apiRequest<T>(
     headers,
     credentials: 'same-origin',
   });
+
   if (!response.ok) {
     let message = `Request failed (${response.status}).`;
     try {
@@ -116,6 +150,7 @@ async function apiRequest<T>(
     }
     throw new Error(message);
   }
+
   if (response.status === 204) return undefined as T;
   return (await response.json()) as T;
 }

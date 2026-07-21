@@ -24,6 +24,16 @@ describe('translate', () => {
     );
   });
 
+  it('uses natural retry copy for unstable mobile connections', () => {
+    expect(
+      translate('zh', 'studio.retryingUpload', {
+        filename: 'IMG_1001.JPG',
+        retry: 2,
+        maxRetries: 3,
+      }),
+    ).toBe('网络有点不稳，正在重试 IMG_1001.JPG（2/3）…');
+  });
+
   it('interpolates values in both languages', () => {
     expect(
       translate('zh', 'memory.assetSummary', { publicCount: 3, privateCount: 7 }),

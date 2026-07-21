@@ -8,7 +8,7 @@ import type { Env, OwnerIdentity } from '../env';
 import { HttpError } from './responses';
 import { mediaTypeForMime, safeObjectExtension, validateUploadFiles } from './validation';
 
-const PRESIGNED_URL_TTL_SECONDS = 300;
+export const PRESIGNED_URL_TTL_SECONDS = 30 * 60;
 
 export async function authorizeUploads(
   request: Request,
@@ -23,7 +23,7 @@ export async function authorizeUploads(
     secretAccessKey: env.R2_SECRET_ACCESS_KEY,
     service: 's3',
     region: 'auto',
-    retries: 1,
+    retries: 2,
   });
   const year = new Date().getUTCFullYear();
   const expiresAt = new Date(Date.now() + PRESIGNED_URL_TTL_SECONDS * 1000).toISOString();
