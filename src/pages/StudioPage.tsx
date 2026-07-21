@@ -968,7 +968,7 @@ export function StudioPage({
       event.state
         === 'uploaded'
         ? t(
-            'studio.uploaded',
+            'upload.uploaded',
           )
         : event.state
             === 'failed'
@@ -1070,6 +1070,9 @@ export function StudioPage({
       </header>
 
       <ActiveUploadSessions
+        sectionLabel={
+          t('upload.activeSessions')
+        }
         sessions={activeCreates}
         busySessionId={
           abandoningSessionId
@@ -1174,7 +1177,7 @@ export function StudioPage({
                       ),
                     uploaded:
                       t(
-                        'studio.uploaded',
+                        'upload.uploaded',
                       ),
                     duplicate:
                       t(
@@ -1182,11 +1185,11 @@ export function StudioPage({
                       ),
                     public:
                       t(
-                        'studio.public',
+                        'upload.public',
                       ),
                     private:
                       t(
-                        'studio.private',
+                        'upload.private',
                       ),
                     keepDuplicate:
                       t(
@@ -1195,6 +1198,26 @@ export function StudioPage({
                     remove:
                       t(
                         'upload.remove',
+                      ),
+                    statusPending:
+                      t(
+                        'upload.reviewStatusPending',
+                      ),
+                    statusUploading:
+                      t(
+                        'upload.reviewStatusUploading',
+                      ),
+                    statusUploaded:
+                      t(
+                        'upload.reviewStatusUploaded',
+                      ),
+                    statusFailed:
+                      t(
+                        'upload.reviewStatusFailed',
+                      ),
+                    statusSkipped:
+                      t(
+                        'upload.reviewStatusSkipped',
                       ),
                   }}
                   onVisibility={(
@@ -1341,10 +1364,10 @@ export function StudioPage({
                               {item.visibility
                                 === 'public'
                                 ? t(
-                                    'studio.public',
+                                    'upload.public',
                                   )
                                 : t(
-                                    'studio.private',
+                                    'upload.private',
                                   )}
                             </button>
 
@@ -1751,10 +1774,10 @@ export function StudioPage({
                       .targetVisibility
                       === 'private'
                       ? t(
-                          'studio.private',
+                          'upload.private',
                         )
                       : t(
-                          'studio.public',
+                          'upload.public',
                         )}
                   </span>
                 ) : legacyCover ? (
@@ -1781,10 +1804,10 @@ export function StudioPage({
                     {legacyCover.visibility
                       === 'private'
                       ? t(
-                          'studio.private',
+                          'upload.private',
                         )
                       : t(
-                          'studio.public',
+                          'upload.public',
                         )}
                   </span>
                 ) : null}

@@ -367,6 +367,9 @@ export function AddPhotosPage({
       {mode === 'recover'
       && activeAppend ? (
         <ActiveUploadSessions
+          sectionLabel={
+            t('upload.activeSessions')
+          }
           sessions={[
             activeAppend,
           ]}
@@ -442,7 +445,7 @@ export function AddPhotosPage({
                 ),
               uploaded:
                 t(
-                  'studio.uploaded',
+                  'upload.uploaded',
                 ),
               duplicate:
                 t(
@@ -450,11 +453,11 @@ export function AddPhotosPage({
                 ),
               public:
                 t(
-                  'studio.public',
+                  'upload.public',
                 ),
               private:
                 t(
-                  'studio.private',
+                  'upload.private',
                 ),
               keepDuplicate:
                 t(
@@ -463,6 +466,26 @@ export function AddPhotosPage({
               remove:
                 t(
                   'upload.remove',
+                ),
+              statusPending:
+                t(
+                  'upload.reviewStatusPending',
+                ),
+              statusUploading:
+                t(
+                  'upload.reviewStatusUploading',
+                ),
+              statusUploaded:
+                t(
+                  'upload.reviewStatusUploaded',
+                ),
+              statusFailed:
+                t(
+                  'upload.reviewStatusFailed',
+                ),
+              statusSkipped:
+                t(
+                  'upload.reviewStatusSkipped',
                 ),
             }}
             onSelect={(files) =>

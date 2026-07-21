@@ -841,11 +841,11 @@ export function UploadSessionReviewPage({
               ),
             public:
               t(
-                'studio.public',
+                'upload.public',
               ),
             private:
               t(
-                'studio.private',
+                'upload.private',
               ),
             duplicateSkipped:
               t(
