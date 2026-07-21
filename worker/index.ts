@@ -1,5 +1,9 @@
 import type { Env } from './env';
-import { optionalOwner, requireOwner, resolveOwnerSession } from './lib/auth';
+import {
+  optionalOwner,
+  requireOwner,
+  resolveOwnerSession,
+} from './lib/auth';
 import {
   createMemory,
   deleteAsset,
@@ -10,88 +14,218 @@ import {
   updateAssetVisibility,
   updateMemory,
 } from './lib/memories';
-import { handleError, json, methodNotAllowed, notFound } from './lib/responses';
+import {
+  handleError,
+  json,
+  methodNotAllowed,
+  notFound,
+} from './lib/responses';
+import {
+  handleUploadSessionRoute,
+  matchUploadSessionRoute,
+} from './lib/upload-session-routes';
 import { authorizeUploads } from './lib/uploads';
 
 export default {
-  async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+  async fetch(
+    request: Request,
+    env: Env,
+    ctx: ExecutionContext,
+  ): Promise<Response> {
     const url = new URL(request.url);
-    if (!url.pathname.startsWith('/api/')) return env.ASSETS.fetch(request);
-    if (request.method === 'OPTIONS') return new Response(null, { status: 204 });
+    const requestId =
+      request.headers.get('cf-ray')
+      ?? crypto.randomUUID();
+
+    if (!url.pathname.startsWith('/api/')) {
+      return env.ASSETS.fetch(request);
+    }
+    if (request.method === 'OPTIONS') {
+      return new Response(null, { status: 204 });
+    }
 
     try {
       if (url.pathname === '/api/health') {
         return request.method === 'GET'
-          ? json({ ok: true, service: 'our-love-story' })
+          ? json({
+              ok: true,
+              service: 'our-love-story',
+            })
           : methodNotAllowed(['GET']);
       }
 
       if (url.pathname === '/api/session') {
         return request.method === 'GET'
-          ? json(await resolveOwnerSession(request, env))
+          ? json(
+              await resolveOwnerSession(request, env),
+            )
           : methodNotAllowed(['GET']);
       }
 
-      if (url.pathname === '/api/uploads') {
-        if (request.method !== 'POST') return methodNotAllowed(['POST']);
+      const uploadSessionRoute =
+        matchUploadSessionRoute(url.pathname);
+      if (uploadSessionRoute) {
         const owner = await requireOwner(request, env);
-        return json(await authorizeUploads(request, env, owner), { status: 201 });
+        return handleUploadSessionRoute(
+          request,
+          env,
+          ctx,
+          owner,
+          uploadSessionRoute,
+          requestId,
+        );
+      }
+
+      if (url.pathname === '/api/uploads') {
+        if (request.method !== 'POST') {
+          return methodNotAllowed(['POST']);
+        }
+        const owner = await requireOwner(request, env);
+        return json(
+          await authorizeUploads(request, env, owner),
+          { status: 201 },
+        );
       }
 
       if (url.pathname === '/api/memories') {
         if (request.method === 'GET') {
-          const owner = await optionalOwner(request, env);
-          return json({ memories: await listMemories(env, Boolean(owner)) });
+          const owner = await optionalOwner(
+            request,
+            env,
+          );
+          return json({
+            memories: await listMemories(
+              env,
+              Boolean(owner),
+            ),
+          });
         }
         if (request.method === 'POST') {
-          const owner = await requireOwner(request, env);
-          return json(await createMemory(request, env, owner), { status: 201 });
+          const owner = await requireOwner(
+            request,
+            env,
+          );
+          return json(
+            await createMemory(
+              request,
+              env,
+              owner,
+            ),
+            { status: 201 },
+          );
         }
         return methodNotAllowed(['GET', 'POST']);
       }
 
-      const memoryMatch = url.pathname.match(/^\/api\/memories\/([^/]+)$/);
+      const memoryMatch = url.pathname.match(
+        /^\/api\/memories\/([^/]+)$/,
+      );
       if (memoryMatch) {
-        const memoryId = decodeURIComponent(memoryMatch[1]);
+        const memoryId = decodeURIComponent(
+          memoryMatch[1]!,
+        );
         if (request.method === 'GET') {
-          const owner = await optionalOwner(request, env);
-          const memory = await getMemory(env, memoryId, Boolean(owner));
+          const owner = await optionalOwner(
+            request,
+            env,
+          );
+          const memory = await getMemory(
+            env,
+            memoryId,
+            Boolean(owner),
+          );
           return memory ? json(memory) : notFound();
         }
         if (request.method === 'PATCH') {
           await requireOwner(request, env);
-          return json(await updateMemory(request, env, memoryId));
+          return json(
+            await updateMemory(
+              request,
+              env,
+              memoryId,
+            ),
+          );
         }
         if (request.method === 'DELETE') {
           await requireOwner(request, env);
-          return deleteMemory(env, memoryId, ctx);
+          return deleteMemory(
+            env,
+            memoryId,
+            ctx,
+          );
         }
-        return methodNotAllowed(['GET', 'PATCH', 'DELETE']);
+        return methodNotAllowed([
+          'GET',
+          'PATCH',
+          'DELETE',
+        ]);
       }
 
-      const downloadMatch = url.pathname.match(/^\/api\/assets\/([^/]+)\/download$/);
+      const downloadMatch = url.pathname.match(
+        /^\/api\/assets\/([^/]+)\/download$/,
+      );
       if (downloadMatch) {
-        if (request.method !== 'GET' && request.method !== 'HEAD') {
-          return methodNotAllowed(['GET', 'HEAD']);
+        if (
+          request.method !== 'GET'
+          && request.method !== 'HEAD'
+        ) {
+          return methodNotAllowed([
+            'GET',
+            'HEAD',
+          ]);
         }
-        return serveAsset(request, env, decodeURIComponent(downloadMatch[1]), true);
+        return serveAsset(
+          request,
+          env,
+          decodeURIComponent(downloadMatch[1]!),
+          true,
+        );
       }
 
-      const assetMatch = url.pathname.match(/^\/api\/assets\/([^/]+)$/);
+      const assetMatch = url.pathname.match(
+        /^\/api\/assets\/([^/]+)$/,
+      );
       if (assetMatch) {
-        const assetId = decodeURIComponent(assetMatch[1]);
+        const assetId = decodeURIComponent(
+          assetMatch[1]!,
+        );
         if (request.method === 'PATCH') {
           await requireOwner(request, env);
-          return json(await updateAssetVisibility(request, env, assetId));
+          return json(
+            await updateAssetVisibility(
+              request,
+              env,
+              assetId,
+            ),
+          );
         }
         if (request.method === 'DELETE') {
           await requireOwner(request, env);
-          return json(await deleteAsset(env, assetId, ctx));
+          return json(
+            await deleteAsset(
+              env,
+              assetId,
+              ctx,
+            ),
+          );
         }
-        if (request.method !== 'GET' && request.method !== 'HEAD') {
-          return methodNotAllowed(['GET', 'HEAD', 'PATCH', 'DELETE']);
+        if (
+          request.method !== 'GET'
+          && request.method !== 'HEAD'
+        ) {
+          return methodNotAllowed([
+            'GET',
+            'HEAD',
+            'PATCH',
+            'DELETE',
+          ]);
         }
-        return serveAsset(request, env, assetId, false);
+        return serveAsset(
+          request,
+          env,
+          assetId,
+          false,
+        );
       }
 
       return notFound();

@@ -129,6 +129,177 @@ export interface DeleteAssetResponse {
   replacementCoverAssetId: string | null;
 }
 
+export type UploadSessionKind = 'create' | 'append';
+
+export type UploadSessionStatus =
+  | 'uploading'
+  | 'review'
+  | 'completed'
+  | 'abandoned';
+
+export type UploadSessionFileStatus =
+  | 'pending'
+  | 'authorized'
+  | 'uploading'
+  | 'uploaded'
+  | 'failed'
+  | 'skipped';
+
+export interface UploadSessionFileInput {
+  resumeFingerprint: string;
+  contentHash: string;
+  occurrenceIndex: number;
+  filename: string;
+  mimeType: string;
+  sizeBytes: number;
+  originalSortOrder: number;
+  targetVisibility: Visibility;
+}
+
+export interface CreatePhotoSessionRequest {
+  sessionKind: 'create';
+  title: string;
+  location: string;
+  date: string;
+  category: MemoryCategory;
+  description: string;
+  featured: boolean;
+  targetMemoryStatus: MemoryStatus;
+  files: UploadSessionFileInput[];
+}
+
+export interface AppendPhotoSessionRequest {
+  sessionKind: 'append';
+  memoryId: string;
+  files: UploadSessionFileInput[];
+}
+
+export type CreateUploadSessionRequest =
+  | CreatePhotoSessionRequest
+  | AppendPhotoSessionRequest;
+
+export interface UploadSessionFile {
+  id: string;
+  resumeFingerprint: string;
+  contentHash: string | null;
+  occurrenceIndex: number;
+  filename: string;
+  mimeType: string;
+  sizeBytes: number;
+  originalSortOrder: number;
+  reviewSortOrder: number;
+  targetVisibility: Visibility;
+  allowDuplicate: boolean;
+  objectKey: string | null;
+  status: UploadSessionFileStatus;
+  lastError: string | null;
+}
+
+export interface UploadSession {
+  id: string;
+  kind: UploadSessionKind;
+  memoryId: string | null;
+  title: string | null;
+  location: string | null;
+  date: string | null;
+  category: MemoryCategory | null;
+  description: string;
+  featured: boolean;
+  targetMemoryStatus: MemoryStatus;
+  expectedFileCount: number;
+  completedFileCount: number;
+  reservedSortStart: number | null;
+  proposedCoverSessionFileId: string | null;
+  status: UploadSessionStatus;
+  expiresAt: string;
+  createdAt: string;
+  updatedAt: string;
+  files: UploadSessionFile[];
+}
+
+export interface UploadSessionSummary {
+  id: string;
+  kind: UploadSessionKind;
+  memoryId: string | null;
+  title: string | null;
+  expectedFileCount: number;
+  completedFileCount: number;
+  status: UploadSessionStatus;
+  updatedAt: string;
+  expiresAt: string;
+}
+
+export interface UploadSessionMatchRequest {
+  files: Array<{
+    localId: string;
+    resumeFingerprint: string;
+    occurrenceIndex: number;
+    filename: string;
+    sizeBytes: number;
+  }>;
+}
+
+export interface UploadSessionMatchResponse {
+  matches: Array<{
+    localId: string;
+    sessionFileId: string;
+    status: UploadSessionFileStatus;
+  }>;
+  missingSessionFileIds: string[];
+  unmatchedLocalIds: string[];
+}
+
+export interface SessionAuthorizedUpload extends AuthorizedUpload {
+  sessionFileId: string;
+}
+
+export interface AuthorizeSessionBatchRequest {
+  sessionFileIds: string[];
+}
+
+export interface AuthorizeSessionBatchResponse {
+  uploads: SessionAuthorizedUpload[];
+}
+
+export interface RecordSessionUploadRequest {
+  sessionFileId: string;
+  objectKey: string;
+}
+
+export interface RecordSessionFailureRequest {
+  sessionFileId: string;
+  errorCode: string;
+}
+
+export interface UpdateSessionFileRequest {
+  targetVisibility?: Visibility;
+  reviewSortOrder?: number;
+  allowDuplicate?: boolean;
+  skipped?: boolean;
+}
+
+export interface UpdateSessionReviewRequest {
+  proposedCoverSessionFileId: string | null;
+  files: Array<{
+    sessionFileId: string;
+    reviewSortOrder: number;
+    targetVisibility: Visibility;
+    allowDuplicate: boolean;
+    skipped: boolean;
+  }>;
+}
+
+export interface UploadSessionDuplicate {
+  sessionFileId: string;
+  contentHash: string;
+  allowDuplicate: boolean;
+  skipped: boolean;
+}
+
+export interface CheckUploadSessionDuplicatesResponse {
+  duplicates: UploadSessionDuplicate[];
+}
+
 export interface ApiErrorBody {
   error: string;
   details?: string[];

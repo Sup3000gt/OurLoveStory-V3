@@ -3,6 +3,14 @@ main = "./worker/index.ts"
 compatibility_date = "2026-07-18"
 compatibility_flags = ["nodejs_compat"]
 
+[limits]
+cpu_ms = 30_000
+subrequests = 1_000
+
+[observability]
+enabled = true
+head_sampling_rate = 1
+
 [assets]
 binding = "ASSETS"
 not_found_handling = "single-page-application"

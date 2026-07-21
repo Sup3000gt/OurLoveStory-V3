@@ -1,59 +1,12 @@
 PRAGMA foreign_keys = ON;
 
-CREATE TABLE IF NOT EXISTS owners (
-  clerk_user_id TEXT PRIMARY KEY,
-  email TEXT NOT NULL UNIQUE,
-  display_name TEXT NOT NULL,
-  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
+ALTER TABLE media_assets ADD COLUMN content_hash TEXT;
+ALTER TABLE media_assets ADD COLUMN hash_version INTEGER NOT NULL DEFAULT 1;
 
-CREATE TABLE IF NOT EXISTS memories (
-  id TEXT PRIMARY KEY,
-  title TEXT NOT NULL,
-  description TEXT NOT NULL DEFAULT '',
-  location TEXT NOT NULL DEFAULT '',
-  taken_at TEXT NOT NULL,
-  category TEXT NOT NULL CHECK (
-    category IN (
-      'Travel',
-      'Daily Life',
-      'Homemade Food',
-      'Dining Out',
-      'Special Moments'
-    )
-  ),
-  visibility TEXT NOT NULL CHECK (visibility IN ('public','private')),
-  is_featured INTEGER NOT NULL DEFAULT 0 CHECK (is_featured IN (0, 1)),
-  status TEXT NOT NULL DEFAULT 'published'
-    CHECK (status IN ('draft','published')),
-  cover_asset_id TEXT NOT NULL,
-  created_by TEXT NOT NULL,
-  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (created_by) REFERENCES owners(clerk_user_id)
-);
+CREATE INDEX idx_assets_memory_content_hash
+  ON media_assets(memory_id, content_hash);
 
-CREATE TABLE IF NOT EXISTS media_assets (
-  id TEXT PRIMARY KEY,
-  memory_id TEXT NOT NULL,
-  media_type TEXT NOT NULL CHECK (media_type IN ('image','video')),
-  object_key TEXT NOT NULL UNIQUE,
-  original_filename TEXT NOT NULL,
-  mime_type TEXT NOT NULL,
-  size_bytes INTEGER NOT NULL CHECK (size_bytes > 0),
-  width INTEGER,
-  height INTEGER,
-  duration_seconds REAL,
-  sort_order INTEGER NOT NULL DEFAULT 0 CHECK (sort_order >= 0),
-  visibility TEXT NOT NULL DEFAULT 'private'
-    CHECK (visibility IN ('public','private')),
-  content_hash TEXT,
-  hash_version INTEGER NOT NULL DEFAULT 1,
-  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (memory_id) REFERENCES memories(id) ON DELETE CASCADE
-);
-
-CREATE TABLE IF NOT EXISTS upload_sessions (
+CREATE TABLE upload_sessions (
   id TEXT PRIMARY KEY,
   owner_id TEXT NOT NULL,
   session_kind TEXT NOT NULL
@@ -96,7 +49,7 @@ CREATE TABLE IF NOT EXISTS upload_sessions (
   )
 );
 
-CREATE TABLE IF NOT EXISTS upload_session_files (
+CREATE TABLE upload_session_files (
   id TEXT PRIMARY KEY,
   upload_session_id TEXT NOT NULL,
   resume_fingerprint TEXT NOT NULL,
@@ -133,32 +86,25 @@ CREATE TABLE IF NOT EXISTS upload_session_files (
     ON DELETE CASCADE
 );
 
-CREATE INDEX IF NOT EXISTS idx_memories_status_visibility_date
-  ON memories(status, visibility, taken_at DESC);
-CREATE INDEX IF NOT EXISTS idx_memories_featured_date
-  ON memories(is_featured, taken_at DESC);
-CREATE INDEX IF NOT EXISTS idx_assets_memory_sort
-  ON media_assets(memory_id, sort_order);
-CREATE INDEX IF NOT EXISTS idx_assets_memory_visibility_sort
-  ON media_assets(memory_id, visibility, sort_order);
-CREATE INDEX IF NOT EXISTS idx_assets_memory_content_hash
-  ON media_assets(memory_id, content_hash);
-CREATE UNIQUE INDEX IF NOT EXISTS idx_upload_session_file_identity
+CREATE UNIQUE INDEX idx_upload_session_file_identity
   ON upload_session_files(
     upload_session_id,
     resume_fingerprint,
     occurrence_index
   );
-CREATE INDEX IF NOT EXISTS idx_upload_sessions_owner_status
+
+CREATE INDEX idx_upload_sessions_owner_status
   ON upload_sessions(owner_id, session_status, updated_at DESC);
-CREATE INDEX IF NOT EXISTS idx_upload_session_files_session_status_sort
+
+CREATE INDEX idx_upload_session_files_session_status_sort
   ON upload_session_files(
     upload_session_id,
     file_status,
     review_sort_order,
     id
   );
-CREATE UNIQUE INDEX IF NOT EXISTS idx_one_active_append_session_per_memory
+
+CREATE UNIQUE INDEX idx_one_active_append_session_per_memory
   ON upload_sessions(memory_id)
   WHERE session_kind = 'append'
     AND session_status IN ('uploading', 'review');

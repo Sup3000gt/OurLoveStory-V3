@@ -1,0 +1,7 @@
+export const MAX_PHOTOS_PER_SELECTION = 100;
+export const MAX_ASSETS_PER_MEMORY = 1_000;
+export const UPLOAD_AUTH_BATCH_SIZE = 20;
+export const PHOTO_UPLOAD_CONCURRENCY = 3;
+export const PHOTO_UPLOAD_MAX_RETRIES = 3;
+export const UPLOAD_SESSION_TTL_DAYS = 7;
+export const CONTENT_HASH_VERSION = 1;
