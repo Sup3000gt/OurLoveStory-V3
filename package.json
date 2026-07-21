@@ -27,14 +27,15 @@
   "devDependencies": {
     "@cloudflare/vite-plugin": "^1.45.1",
     "@cloudflare/workers-types": "^5.20260718.1",
+    "@types/node": "^22.10.2",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "@vitejs/plugin-react": "^4.3.4",
     "jsdom": "^25.0.1",
+    "miniflare": "4.20260714.0",
     "typescript": "^5.7.2",
     "vite": "^6.0.1",
     "vitest": "^3.2.7",
-    "wrangler": "^4.112.0",
-    "@types/node": "^22.10.2"
+    "wrangler": "^4.112.0"
   }
 }
