@@ -7,13 +7,17 @@ import {
   listUploadSessions,
 } from '../lib/api';
 
+export const uploadSessionsQueryKey = [
+  'upload-sessions',
+] as const;
+
 export function useUploadSessions(
   enabled: boolean,
 ) {
   const { getToken } = useAuth();
 
   return useQuery({
-    queryKey: ['upload-sessions'],
+    queryKey: uploadSessionsQueryKey,
     queryFn: () =>
       listUploadSessions(getToken),
     enabled,
