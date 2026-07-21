@@ -94,8 +94,14 @@ export function usePhotoSessionUpload() {
 
   const replacePhotos = useCallback(
     (next: SelectedPhoto[]) => {
+      const retainedUrls = new Set(
+        next.map((photo) => photo.previewUrl),
+      );
+
       for (const photo of photosRef.current) {
-        URL.revokeObjectURL(photo.previewUrl);
+        if (!retainedUrls.has(photo.previewUrl)) {
+          URL.revokeObjectURL(photo.previewUrl);
+        }
       }
 
       setPhotos(next);
@@ -163,35 +169,73 @@ export function usePhotoSessionUpload() {
 
   const attachSession = useCallback(
     (
-      prepared: SelectedPhoto[],
+      selected: SelectedPhoto[],
       nextSession: UploadSession,
-    ) => {
-      const bound = bindLocalPhotosToSession(
-        prepared,
+    ): SelectedPhoto[] => {
+      const bound = bindSelectedPhotos(
+        selected,
         nextSession,
       );
 
-      const previewByLocalId = new Map(
-        prepared.map((photo) => [
-          photo.localId,
-          photo.previewUrl,
-        ]),
-      );
-
-      setPhotos(
-        bound.map((photo) => ({
-          ...photo,
-          previewUrl:
-            previewByLocalId.get(
-              photo.localId,
-            )!,
-          message: '',
-        })),
-      );
-
+      replacePhotos(bound);
       setSession(nextSession);
+
+      return bound;
     },
-    [],
+    [replacePhotos],
+  );
+
+  const uploadBoundSession = useCallback(
+    async (
+      targetSession: UploadSession,
+      targetPhotos: SelectedPhoto[],
+    ): Promise<UploadSession> => {
+      await uploadPendingSessionPhotos({
+        sessionId: targetSession.id,
+        photos:
+          toSessionUploadPhotos(
+            targetPhotos,
+          ),
+        getToken,
+        onEvent: (event) => {
+          setPhotos((current) =>
+            current.map((photo) =>
+              photo.localId === event.id
+                ? {
+                    ...photo,
+                    status: event.state,
+                    message:
+                      `${event.filename} `
+                      + `${event.completed}/${event.total}`,
+                  }
+                : photo,
+            ),
+          );
+
+          setProgressText(
+            `${event.filename} `
+            + `${event.completed}/${event.total}`,
+          );
+        },
+      });
+
+      const refreshed =
+        await getUploadSession(
+          targetSession.id,
+          getToken,
+        );
+
+      attachSession(
+        targetPhotos,
+        refreshed,
+      );
+
+      return refreshed;
+    },
+    [
+      attachSession,
+      getToken,
+    ],
   );
 
   const startCreate = useCallback(
@@ -264,6 +308,84 @@ export function usePhotoSessionUpload() {
     ],
   );
 
+
+  const startCreateAndUpload = useCallback(
+    async (
+      metadata: CreatePhotoSessionMetadata,
+    ) => {
+      const selected = photos;
+
+      if (selected.length === 0) {
+        throw new Error(
+          'Choose at least one photo.',
+        );
+      }
+
+      setBusy(true);
+      setErrorText('');
+
+      try {
+        const created =
+          await createUploadSession(
+            {
+              sessionKind: 'create',
+              ...metadata,
+              files: selected.map(
+                (
+                  photo,
+                  originalSortOrder,
+                ) => ({
+                  resumeFingerprint:
+                    photo.resumeFingerprint,
+                  contentHash:
+                    photo.contentHash,
+                  occurrenceIndex:
+                    photo.occurrenceIndex,
+                  filename:
+                    photo.file.name,
+                  mimeType:
+                    photo.file.type
+                      .toLowerCase(),
+                  sizeBytes:
+                    photo.file.size,
+                  originalSortOrder,
+                  targetVisibility:
+                    photo.targetVisibility,
+                }),
+              ),
+            },
+            getToken,
+          );
+
+        const bound = attachSession(
+          selected,
+          created,
+        );
+
+        return await uploadBoundSession(
+          created,
+          bound,
+        );
+      } catch (error) {
+        setErrorText(
+          error instanceof Error
+            ? error.message
+            : 'The photo Session could not be created.',
+        );
+
+        throw error;
+      } finally {
+        setBusy(false);
+        setProgressText('');
+      }
+    },
+    [
+      attachSession,
+      getToken,
+      photos,
+      uploadBoundSession,
+    ],
+  );
   const startAppend = useCallback(
     async (memoryId: string) => {
       if (photos.length === 0) {
@@ -332,6 +454,82 @@ export function usePhotoSessionUpload() {
     ],
   );
 
+
+  const startAppendAndUpload = useCallback(
+    async (memoryId: string) => {
+      const selected = photos;
+
+      if (selected.length === 0) {
+        throw new Error(
+          'Choose at least one photo.',
+        );
+      }
+
+      setBusy(true);
+      setErrorText('');
+
+      try {
+        const created =
+          await createUploadSession(
+            {
+              sessionKind: 'append',
+              memoryId,
+              files: selected.map(
+                (
+                  photo,
+                  originalSortOrder,
+                ) => ({
+                  resumeFingerprint:
+                    photo.resumeFingerprint,
+                  contentHash:
+                    photo.contentHash,
+                  occurrenceIndex:
+                    photo.occurrenceIndex,
+                  filename:
+                    photo.file.name,
+                  mimeType:
+                    photo.file.type
+                      .toLowerCase(),
+                  sizeBytes:
+                    photo.file.size,
+                  originalSortOrder,
+                  targetVisibility:
+                    photo.targetVisibility,
+                }),
+              ),
+            },
+            getToken,
+          );
+
+        const bound = attachSession(
+          selected,
+          created,
+        );
+
+        return await uploadBoundSession(
+          created,
+          bound,
+        );
+      } catch (error) {
+        setErrorText(
+          error instanceof Error
+            ? error.message
+            : 'The photo addition could not be created.',
+        );
+
+        throw error;
+      } finally {
+        setBusy(false);
+        setProgressText('');
+      }
+    },
+    [
+      attachSession,
+      getToken,
+      photos,
+      uploadBoundSession,
+    ],
+  );
   const resume = useCallback(
     async (
       sessionId: string,
@@ -440,6 +638,136 @@ export function usePhotoSessionUpload() {
     ],
   );
 
+
+  const resumeAndUpload = useCallback(
+    async (
+      sessionId: string,
+      files: File[],
+    ) => {
+      setBusy(true);
+      setErrorText('');
+
+      const selectedWithPreviews:
+        SelectedPhoto[] = [];
+
+      try {
+        const mode =
+          classifySelection(files);
+
+        if (mode.mode !== 'photo-session') {
+          throw new Error(
+            'Only photos can resume this Session.',
+          );
+        }
+
+        const prepared =
+          await preparePhotoMetadata(
+            files,
+            getHasher(),
+          );
+
+        selectedWithPreviews.push(
+          ...prepared.map((photo) => ({
+            ...photo,
+            previewUrl:
+              URL.createObjectURL(
+                photo.file,
+              ),
+            sessionFileId: null,
+            status: 'pending' as const,
+            allowDuplicate: false,
+            message: '',
+          })),
+        );
+
+        const nextSession =
+          await getUploadSession(
+            sessionId,
+            getToken,
+          );
+
+        const match =
+          await matchUploadSessionFiles(
+            sessionId,
+            {
+              files:
+                selectedWithPreviews.map(
+                  (photo) => ({
+                    localId:
+                      photo.localId,
+                    resumeFingerprint:
+                      photo.resumeFingerprint,
+                    occurrenceIndex:
+                      photo.occurrenceIndex,
+                    filename:
+                      photo.file.name,
+                    sizeBytes:
+                      photo.file.size,
+                  }),
+                ),
+            },
+            getToken,
+          );
+
+        if (
+          match.missingSessionFileIds.length > 0
+          || match.unmatchedLocalIds.length > 0
+        ) {
+          throw new Error(
+            'Reselect every original photo from this upload Session.',
+          );
+        }
+
+        const bound = attachSession(
+          selectedWithPreviews,
+          nextSession,
+        );
+
+        return await uploadBoundSession(
+          nextSession,
+          bound,
+        );
+      } catch (error) {
+        const retainedUrls = new Set(
+          photosRef.current.map(
+            (photo) => photo.previewUrl,
+          ),
+        );
+
+        for (
+          const photo
+          of selectedWithPreviews
+        ) {
+          if (
+            !retainedUrls.has(
+              photo.previewUrl,
+            )
+          ) {
+            URL.revokeObjectURL(
+              photo.previewUrl,
+            );
+          }
+        }
+
+        setErrorText(
+          error instanceof Error
+            ? error.message
+            : 'The photo Session could not be resumed.',
+        );
+
+        throw error;
+      } finally {
+        setBusy(false);
+        setProgressText('');
+      }
+    },
+    [
+      attachSession,
+      getHasher,
+      getToken,
+      uploadBoundSession,
+    ],
+  );
   const uploadPending = useCallback(
     async () => {
       if (!session) {
@@ -706,8 +1034,11 @@ export function usePhotoSessionUpload() {
     errorText,
     selectPhotos,
     startCreate,
+    startCreateAndUpload,
     startAppend,
+    startAppendAndUpload,
     resume,
+    resumeAndUpload,
     uploadPending,
     setVisibility,
     keepDuplicate,
@@ -716,6 +1047,70 @@ export function usePhotoSessionUpload() {
   };
 }
 
+
+export function bindSelectedPhotos(
+  selected: SelectedPhoto[],
+  session: UploadSession,
+): SelectedPhoto[] {
+  const bound =
+    bindLocalPhotosToSession(
+      selected,
+      session,
+    );
+
+  const selectedByLocalId =
+    new Map(
+      selected.map((photo) => [
+        photo.localId,
+        photo,
+      ]),
+    );
+
+  return bound.map((photo) => {
+    const existing =
+      selectedByLocalId.get(
+        photo.localId,
+      );
+
+    if (!existing) {
+      throw new Error(
+        `${photo.file.name} lost its local preview.`,
+      );
+    }
+
+    return {
+      ...photo,
+      previewUrl:
+        existing.previewUrl,
+      message:
+        existing.message,
+    };
+  });
+}
+
+export function toSessionUploadPhotos(
+  selected: SelectedPhoto[],
+): SessionUploadPhoto[] {
+  return selected
+    .filter(
+      (
+        photo,
+      ): photo is SelectedPhoto & {
+        sessionFileId: string;
+      } =>
+        photo.sessionFileId !== null,
+    )
+    .map((photo) => ({
+      localId: photo.localId,
+      sessionFileId:
+        photo.sessionFileId,
+      file: photo.file,
+      status:
+        statusForUpload(
+          photo.status,
+        ),
+    }));
+}
 function statusForUpload(
   status: LocalPhotoStatus,
 ) {
