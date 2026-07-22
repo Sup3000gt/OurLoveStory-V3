@@ -3,6 +3,7 @@ import {
   Route,
   Routes,
 } from 'react-router-dom';
+import { useState } from 'react';
 import {
   Header,
 } from './components/Header';
@@ -15,6 +16,7 @@ import {
 import {
   useOwnerSession,
 } from './hooks/useOwnerSession';
+import { getGalleryPageState } from './lib/gallery-pagination';
 import {
   AddPhotosPage,
 } from './pages/AddPhotosPage';
@@ -43,9 +45,34 @@ export default function App() {
   const memoryQuery =
     useMemories();
 
+  const [galleryPageIndex, setGalleryPageIndex] = useState(0);
+  const memoryPages = memoryQuery.data?.pages;
   const memories =
-    memoryQuery.data?.pages.flatMap((page) => page.memories)
+    memoryPages?.flatMap((page) => page.memories)
     ?? [];
+  const galleryPage = getGalleryPageState(
+    memoryPages,
+    galleryPageIndex,
+    Boolean(memoryQuery.hasNextPage),
+  );
+
+  const goToPreviousGalleryPage = () => {
+    setGalleryPageIndex((pageIndex) => Math.max(pageIndex - 1, 0));
+  };
+
+  const goToNextGalleryPage = () => {
+    if (galleryPageIndex < galleryPage.totalPages - 1) {
+      setGalleryPageIndex((pageIndex) => pageIndex + 1);
+      return;
+    }
+
+    if (!memoryQuery.hasNextPage || memoryQuery.isFetchingNextPage) return;
+
+    void memoryQuery.fetchNextPage().then((result) => {
+      const pages = result.data?.pages;
+      if (pages?.length) setGalleryPageIndex(pages.length - 1);
+    });
+  };
 
   const isOwner =
     ownerSession.data?.isOwner
@@ -87,7 +114,7 @@ export default function App() {
             element={
               <GalleryPage
                 memories={
-                  memories
+                  galleryPage.memories
                 }
                 isLoading={
                   memoryQuery.isLoading
@@ -96,9 +123,13 @@ export default function App() {
                   memoryQuery.error
                 }
                 isOwner={isOwner}
-                hasNextPage={Boolean(memoryQuery.hasNextPage)}
-                isFetchingNextPage={memoryQuery.isFetchingNextPage}
-                onLoadMore={() => { void memoryQuery.fetchNextPage(); }}
+                currentPage={galleryPage.currentPage}
+                totalPages={galleryPage.totalPages}
+                hasPreviousPage={galleryPage.hasPreviousPage}
+                hasNextPage={galleryPage.hasNextPage}
+                isFetchingPage={memoryQuery.isFetchingNextPage}
+                onPreviousPage={goToPreviousGalleryPage}
+                onNextPage={goToNextGalleryPage}
               />
             }
           />

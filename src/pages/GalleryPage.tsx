@@ -10,9 +10,13 @@ interface GalleryPageProps {
   isLoading: boolean;
   error: Error | null;
   isOwner: boolean;
+  currentPage: number;
+  totalPages: number;
+  hasPreviousPage: boolean;
   hasNextPage: boolean;
-  isFetchingNextPage: boolean;
-  onLoadMore: () => void;
+  isFetchingPage: boolean;
+  onPreviousPage: () => void;
+  onNextPage: () => void;
 }
 
 export function GalleryPage({
@@ -20,9 +24,13 @@ export function GalleryPage({
   isLoading,
   error,
   isOwner,
+  currentPage,
+  totalPages,
+  hasPreviousPage,
   hasNextPage,
-  isFetchingNextPage,
-  onLoadMore,
+  isFetchingPage,
+  onPreviousPage,
+  onNextPage,
 }: GalleryPageProps) {
   const { t } = useTranslation();
   const [category, setCategory] = useState<string>('All');
@@ -64,17 +72,28 @@ export function GalleryPage({
       {filtered.length > 0 ? (
         <GalleryGrid memories={filtered} variant="masonry" isOwner={isOwner} />
       ) : null}
-      {hasNextPage ? (
-        <div className="gallery-load-more">
+      {totalPages > 0 && (hasPreviousPage || hasNextPage) ? (
+        <nav className="gallery-pagination" aria-label={t('gallery.paginationLabel')}>
           <button
             className="secondary-button"
             type="button"
-            onClick={onLoadMore}
-            disabled={isFetchingNextPage}
+            onClick={onPreviousPage}
+            disabled={!hasPreviousPage || isFetchingPage}
           >
-            {isFetchingNextPage ? t('gallery.loadingMore') : t('gallery.loadMore')}
+            {t('gallery.previousPage')}
           </button>
-        </div>
+          <span aria-live="polite">
+            {t('gallery.page', { current: currentPage })}
+          </span>
+          <button
+            className="secondary-button"
+            type="button"
+            onClick={onNextPage}
+            disabled={!hasNextPage || isFetchingPage}
+          >
+            {isFetchingPage ? t('gallery.loadingPage') : t('gallery.nextPage')}
+          </button>
+        </nav>
       ) : null}
     </main>
   );

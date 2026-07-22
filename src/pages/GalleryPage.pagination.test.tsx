@@ -15,8 +15,9 @@ describe('GalleryPage pagination', () => {
     container = undefined;
   });
 
-  it('shows and triggers Load more when another page is available', () => {
-    const loadMore = vi.fn();
+  it('shows page navigation instead of appending a Load more list', () => {
+    const previousPage = vi.fn();
+    const nextPage = vi.fn();
     container = document.createElement('div');
     document.body.append(container);
     root = createRoot(container);
@@ -28,18 +29,26 @@ describe('GalleryPage pagination', () => {
           isLoading={false}
           error={null}
           isOwner={false}
+          currentPage={1}
+          totalPages={2}
+          hasPreviousPage={false}
           hasNextPage
-          isFetchingNextPage={false}
-          onLoadMore={loadMore}
+          isFetchingPage={false}
+          onPreviousPage={previousPage}
+          onNextPage={nextPage}
         />
       </LanguageProvider>,
     ));
 
+    expect(container.textContent).toContain('Page 1');
+    expect(container.textContent).not.toContain('Load more');
+
     const button = Array.from(container.querySelectorAll('button'))
-      .find((item) => item.textContent?.includes('Load more'));
+      .find((item) => item.textContent?.includes('Next page'));
     expect(button).toBeTruthy();
 
     act(() => button?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
-    expect(loadMore).toHaveBeenCalledOnce();
+    expect(nextPage).toHaveBeenCalledOnce();
+    expect(previousPage).not.toHaveBeenCalled();
   });
 });

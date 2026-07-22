@@ -799,12 +799,37 @@
   }
 }
 
-.gallery-load-more {
+.gallery-pagination {
   display: flex;
+  align-items: center;
+  gap: 18px;
   justify-content: center;
   margin-top: 34px;
 }
 
-.gallery-load-more button {
+.gallery-pagination button {
   min-width: 190px;
+}
+
+.gallery-pagination span {
+  min-width: 110px;
+  color: var(--muted);
+  font-size: 12px;
+  text-align: center;
+}
+
+@media (max-width: 620px) {
+  .gallery-pagination {
+    gap: 10px;
+  }
+
+  .gallery-pagination button {
+    min-width: 0;
+    flex: 1;
+    padding-inline: 12px;
+  }
+
+  .gallery-pagination span {
+    min-width: 78px;
+  }
 }
