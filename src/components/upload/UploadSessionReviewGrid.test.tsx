@@ -145,7 +145,7 @@ describe('UploadSessionReviewGrid order controls', () => {
     );
 
     expect(styles).toMatch(
-      /\.review-order-actions\s*\{[\s\S]*?display:\s*grid;[\s\S]*?grid-template-columns:\s*1fr;/,
+      /\.review-order-actions\s*\{[\s\S]*?display:\s*grid;[\s\S]*?grid-template-columns:\s*minmax\(0,\s*1fr\);/,
     );
     expect(styles).toMatch(
       /\.review-order-actions button\s*\{[\s\S]*?width:\s*100%;[\s\S]*?justify-content:\s*center;/,
