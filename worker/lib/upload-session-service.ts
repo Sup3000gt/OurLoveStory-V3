@@ -20,6 +20,11 @@ import {
 } from '../../shared/upload-constants';
 import type { Env, OwnerIdentity } from '../env';
 import { getMemory } from './memories';
+import { sessionThumbnailKey } from './image-derivatives';
+import {
+  readOrGenerateDerivative,
+  type GeneratedDerivative,
+} from './image-transformer';
 import {
   findExistingMemoryHashes,
   getOwnedMemoryStats,
@@ -1408,5 +1413,39 @@ async function mapWithConcurrency<T>(
         await worker(item);
       }
     }),
+  );
+}
+
+export async function readUploadSessionThumbnail(
+  env: Env,
+  owner: OwnerIdentity,
+  sessionId: string,
+  fileId: string,
+): Promise<GeneratedDerivative> {
+  const file = await getOwnedSessionFile(
+    env,
+    sessionId,
+    fileId,
+    owner.userId,
+  );
+  if (
+    !file
+    || file.file_status !== 'uploaded'
+    || !file.object_key
+  ) {
+    throw new HttpError(404, 'Session thumbnail not found.');
+  }
+
+  return readOrGenerateDerivative(
+    env,
+    {
+      kind: 'upload-session',
+      sessionId,
+      sessionFileId: file.id,
+      objectKey: file.object_key,
+      sizeBytes: file.size_bytes,
+    },
+    'thumbnail',
+    sessionThumbnailKey(sessionId, file.id),
   );
 }
