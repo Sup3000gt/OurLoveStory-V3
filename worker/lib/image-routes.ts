@@ -1,5 +1,6 @@
 import type { Env } from '../env';
 import { optionalOwner } from './auth';
+import { serveAsset } from './memories';
 import {
   serveImageDerivative,
   serveImageOriginal,
@@ -11,6 +12,8 @@ import { methodNotAllowed } from './responses';
 export type ImageRoute =
   | { action: 'derivative'; assetId: string; variant: ImageDerivativeVariant }
   | { action: 'original'; assetId: string }
+  | { action: 'legacy-asset'; assetId: string }
+  | { action: 'legacy-download'; assetId: string }
   | { action: 'internal-asset-source'; assetId: string }
   | { action: 'internal-session-source'; sessionId: string; fileId: string };
 
@@ -27,6 +30,16 @@ export function matchImageRoute(pathname: string): ImageRoute | null {
     if (action === 'thumbnail' || action === 'preview') {
       return { action: 'derivative', assetId, variant: action };
     }
+  }
+
+  const legacyDownloadMatch = pathname.match(/^\/api\/assets\/([^/]+)\/download$/);
+  if (legacyDownloadMatch) {
+    return { action: 'legacy-download', assetId: decodeSegment(legacyDownloadMatch[1]!) };
+  }
+
+  const legacyAssetMatch = pathname.match(/^\/api\/assets\/([^/]+)$/);
+  if (legacyAssetMatch) {
+    return { action: 'legacy-asset', assetId: decodeSegment(legacyAssetMatch[1]!) };
   }
 
   const assetSourceMatch = pathname.match(/^\/api\/internal\/image-source\/assets\/([^/]+)$/);
@@ -60,6 +73,9 @@ export async function handleImageRoute(
   if (route.action === 'internal-asset-source' || route.action === 'internal-session-source') {
     return serveSignedInternalImageSource(request, env, route);
   }
+
+  if (route.action === 'legacy-asset') return serveAsset(request, env, route.assetId, false);
+  if (route.action === 'legacy-download') return serveAsset(request, env, route.assetId, true);
 
   const isOwner = Boolean(await optionalOwner(request, env));
   if (route.action === 'derivative') {

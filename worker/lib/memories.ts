@@ -11,6 +11,7 @@ import type { Env, OwnerIdentity } from '../env';
 import { optionalOwner } from './auth';
 import { planAssetDeletion } from './asset-deletion';
 import { resolveVisibleCoverAssetId } from './asset-visibility';
+import { serveImageDerivative, serveImageOriginal } from './image-delivery';
 import { imageAssetObjectKeys } from './image-session-lifecycle';
 import { HttpError, noContent, notFound } from './responses';
 import {
@@ -45,6 +46,7 @@ interface JoinedMemoryRow {
 
 interface AssetDescriptorRow {
   asset_id: string;
+  media_type: MemoryAsset['type'];
   object_key: string;
   original_filename: string;
   mime_type: string;
@@ -434,6 +436,7 @@ export async function serveAsset(
   const descriptor = await env.DB.prepare(`
     SELECT
       a.id AS asset_id,
+      a.media_type,
       a.object_key,
       a.original_filename,
       a.mime_type,
@@ -450,7 +453,14 @@ export async function serveAsset(
 
   if (!descriptor) return notFound();
   const publiclyVisible = descriptor.visibility === 'public' && descriptor.status === 'published';
-  if (!publiclyVisible && !(await optionalOwner(request, env))) return notFound();
+  const isOwner = Boolean(await optionalOwner(request, env));
+  if (!publiclyVisible && !isOwner) return notFound();
+
+  if (descriptor.media_type === 'image') {
+    return download
+      ? serveImageOriginal(request, env, assetId, isOwner)
+      : serveImageDerivative(request, env, assetId, 'preview', isOwner);
+  }
 
   if (request.method === 'HEAD') {
     const head = await env.MEDIA.head(descriptor.object_key);
@@ -530,8 +540,6 @@ function aggregateMemories(rows: JoinedMemoryRow[], isOwner: boolean): Memory[] 
         originalUrl: isOwner
           ? `/api/assets/${encodeURIComponent(row.asset_id)}/original`
           : null,
-        url: `/api/assets/${encodeURIComponent(row.asset_id)}`,
-        downloadUrl: `/api/assets/${encodeURIComponent(row.asset_id)}/download`,
         filename: row.original_filename,
         mimeType: row.mime_type,
         sizeBytes: row.size_bytes,

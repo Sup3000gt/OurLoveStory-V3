@@ -17,8 +17,6 @@ export interface ImageAsset {
   thumbnailUrl: string;
   previewUrl: string;
   originalUrl: string | null;
-  url: string;
-  downloadUrl: string;
   filename: string;
   mimeType: string;
   sizeBytes: number;

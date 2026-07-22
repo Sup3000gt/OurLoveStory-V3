@@ -16,7 +16,7 @@ import { MemoryCard } from './MemoryCard';
 
 const image = {
   id: 'image-1', type: 'image' as const, thumbnailUrl: '/thumb', previewUrl: '/preview',
-  originalUrl: null, url: '/legacy', downloadUrl: '/download', filename: 'photo.jpg',
+  originalUrl: null, filename: 'photo.jpg',
   mimeType: 'image/jpeg', sizeBytes: 1, sortOrder: 0, visibility: 'public' as const,
 };
 const video = {
