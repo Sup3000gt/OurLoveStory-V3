@@ -13,8 +13,6 @@ const image: ImageAsset = {
   thumbnailUrl: '/api/assets/image/thumbnail',
   previewUrl: '/api/assets/image/preview',
   originalUrl: '/api/assets/image/original',
-  url: '/legacy/image',
-  downloadUrl: '/api/assets/image/download',
   filename: 'image.jpg',
   mimeType: 'image/jpeg',
   sizeBytes: 10,

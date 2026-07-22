@@ -67,7 +67,11 @@ export default {
       }
 
       const imageRoute = matchImageRoute(url.pathname);
-      if (imageRoute) {
+      if (imageRoute && !(
+        imageRoute.action === 'legacy-asset'
+        && request.method !== 'GET'
+        && request.method !== 'HEAD'
+      )) {
         return handleImageRoute(request, env, imageRoute);
       }
 
@@ -168,27 +172,6 @@ export default {
           'PATCH',
           'DELETE',
         ]);
-      }
-
-      const downloadMatch = url.pathname.match(
-        /^\/api\/assets\/([^/]+)\/download$/,
-      );
-      if (downloadMatch) {
-        if (
-          request.method !== 'GET'
-          && request.method !== 'HEAD'
-        ) {
-          return methodNotAllowed([
-            'GET',
-            'HEAD',
-          ]);
-        }
-        return serveAsset(
-          request,
-          env,
-          decodeURIComponent(downloadMatch[1]!),
-          true,
-        );
       }
 
       const assetMatch = url.pathname.match(

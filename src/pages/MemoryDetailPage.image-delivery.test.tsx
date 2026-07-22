@@ -26,7 +26,7 @@ import { MemoryDetailPage } from './MemoryDetailPage';
 
 const ownerImage = {
   id: 'image-owner', type: 'image' as const, thumbnailUrl: '/thumb-owner', previewUrl: '/preview-owner',
-  originalUrl: '/original-owner', url: '/legacy-owner', downloadUrl: '/legacy-download', filename: 'owner.jpg',
+  originalUrl: '/original-owner', filename: 'owner.jpg',
   mimeType: 'image/jpeg', sizeBytes: 1, sortOrder: 0, visibility: 'private' as const,
 };
 const guestImage = { ...ownerImage, id: 'image-guest', thumbnailUrl: '/thumb-guest', previewUrl: '/preview-guest', originalUrl: null, filename: 'guest.jpg' };

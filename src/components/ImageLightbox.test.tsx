@@ -10,8 +10,6 @@ const asset: ImageAsset = {
   thumbnailUrl: '/thumbnail',
   previewUrl: '/preview',
   originalUrl: '/original',
-  url: '/legacy',
-  downloadUrl: '/download',
   filename: 'memory.jpg',
   mimeType: 'image/jpeg',
   sizeBytes: 1,

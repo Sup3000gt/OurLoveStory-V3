@@ -31,9 +31,18 @@ describe('image route matching', () => {
     });
   });
 
-  it('does not claim legacy or unrelated routes', () => {
-    expect(matchImageRoute('/api/assets/a')).toBeNull();
-    expect(matchImageRoute('/api/assets/a/download')).toBeNull();
+  it('matches generic asset aliases for the Release 2 cutover', () => {
+    expect(matchImageRoute('/api/assets/a')).toEqual({
+      action: 'legacy-asset',
+      assetId: 'a',
+    });
+    expect(matchImageRoute('/api/assets/a/download')).toEqual({
+      action: 'legacy-download',
+      assetId: 'a',
+    });
+  });
+
+  it('does not claim unrelated routes', () => {
     expect(matchImageRoute('/api/memories')).toBeNull();
   });
 });
