@@ -15,6 +15,10 @@ import {
   updateMemory,
 } from './lib/memories';
 import {
+  handleImageRoute,
+  matchImageRoute,
+} from './lib/image-routes';
+import {
   handleError,
   json,
   methodNotAllowed,
@@ -60,6 +64,11 @@ export default {
               await resolveOwnerSession(request, env),
             )
           : methodNotAllowed(['GET']);
+      }
+
+      const imageRoute = matchImageRoute(url.pathname);
+      if (imageRoute) {
+        return handleImageRoute(request, env, imageRoute);
       }
 
       const uploadSessionRoute =

@@ -22,6 +22,7 @@ import {
 } from 'react-router-dom';
 import type {
   UploadSession,
+  UploadSessionFile,
 } from '../../shared/contracts';
 import {
   ReviewActions,
@@ -57,6 +58,9 @@ import {
   updateUploadSessionReview,
 } from '../lib/api';
 import {
+  sessionThumbnailUrl,
+} from '../lib/image-assets';
+import {
   buildReviewRequest,
   createReviewDraft,
   getReviewBlockingReason,
@@ -89,6 +93,24 @@ type Translator = (
   key: TranslationKey,
   values?: TranslationValues,
 ) => string;
+
+export function reviewPreviewUrl(
+  sessionId: string,
+  fileId: string,
+  serverStatus: UploadSessionFile['status'],
+  localUrl: string | null,
+): string | null {
+  if (localUrl) {
+    return localUrl;
+  }
+
+  return serverStatus === 'uploaded'
+    ? sessionThumbnailUrl(
+        sessionId,
+        fileId,
+      )
+    : null;
+}
 
 export function reviewRecoveryMode(
   session: UploadSession,
@@ -172,21 +194,33 @@ export function UploadSessionReviewPage({
 
   const previewBySessionFileId =
     useMemo(
-      () =>
-        new Map(
-          [...localLookup].map(
+      () => {
+        if (!session) {
+          return new Map<string, string>();
+        }
+
+        return new Map(
+          session.files.map((file) => [
+            file.id,
+            reviewPreviewUrl(
+              session.id,
+              file.id,
+              file.status,
+              localLookup.get(
+                file.id,
+              )?.previewUrl
+                ?? null,
+            ),
+          ]).filter(
             (
-              [
-                fileId,
-                photo,
-              ],
-            ) => [
-              fileId,
-              photo.previewUrl,
-            ],
+              entry,
+            ): entry is [string, string] =>
+              entry[1] !== null,
           ),
-        ),
+        );
+      },
       [
+        session,
         localSession,
         photoWorkflow.photos,
       ],
@@ -838,6 +872,14 @@ export function UploadSessionReviewPage({
             missingPreview:
               t(
                 'upload.missingPreview',
+              ),
+            unavailablePreview:
+              t(
+                'image.unavailable',
+              ),
+            retryPreview:
+              t(
+                'image.retry',
               ),
             public:
               t(

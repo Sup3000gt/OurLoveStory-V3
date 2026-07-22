@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import type { Memory } from '../../shared/contracts';
-import { applyAssetDeletion } from './memory-assets';
+import {
+  adjacentImageAssetId,
+  applyAssetDeletion,
+  imageAssetsForLightbox,
+} from './memory-assets';
 
 const memory: Memory = {
   id: 'memory-1',
@@ -17,6 +21,9 @@ const memory: Memory = {
     {
       id: 'asset-a',
       type: 'image',
+      thumbnailUrl: '/api/assets/asset-a/thumbnail',
+      previewUrl: '/api/assets/asset-a/preview',
+      originalUrl: '/api/assets/asset-a/original',
       url: '/api/assets/asset-a',
       downloadUrl: '/api/assets/asset-a/download',
       filename: 'a.jpg',
@@ -28,6 +35,9 @@ const memory: Memory = {
     {
       id: 'asset-b',
       type: 'image',
+      thumbnailUrl: '/api/assets/asset-b/thumbnail',
+      previewUrl: '/api/assets/asset-b/preview',
+      originalUrl: '/api/assets/asset-b/original',
       url: '/api/assets/asset-b',
       downloadUrl: '/api/assets/asset-b/download',
       filename: 'b.jpg',
@@ -63,5 +73,53 @@ describe('applyAssetDeletion', () => {
     });
 
     expect(result).toEqual([]);
+  });
+});
+
+it('preserves image-specific fields when deleting a video asset', () => {
+  const withVideo: Memory = {
+    ...memory,
+    assets: [
+      ...memory.assets,
+      {
+        id: 'video-1',
+        type: 'video',
+        url: '/video',
+        downloadUrl: '/video/download',
+        filename: 'video.mp4',
+        mimeType: 'video/mp4',
+        sizeBytes: 10,
+        sortOrder: 2,
+        visibility: 'private',
+      },
+    ],
+  };
+  const result = applyAssetDeletion([withVideo], {
+    deletedAssetId: 'video-1', deletedMemory: false, memoryId: 'memory-1', replacementCoverAssetId: null,
+  });
+  expect(result[0]?.assets[0]).toMatchObject({ thumbnailUrl: '/api/assets/asset-a/thumbnail', previewUrl: '/api/assets/asset-a/preview' });
+});
+
+describe('image lightbox helpers', () => {
+  it('filters videos while preserving image union fields', () => {
+    const withVideo: Memory = {
+      ...memory,
+      assets: [
+        memory.assets[0]!,
+        {
+          id: 'video-1', type: 'video', url: '/video', downloadUrl: '/video-download', filename: 'clip.mp4',
+          mimeType: 'video/mp4', sizeBytes: 10, sortOrder: 1, visibility: 'private',
+        },
+        memory.assets[1]!,
+      ],
+    };
+    expect(imageAssetsForLightbox(withVideo).map((asset) => asset.id)).toEqual(['asset-a', 'asset-b']);
+    expect(imageAssetsForLightbox(withVideo)[0]).toHaveProperty('previewUrl', '/api/assets/asset-a/preview');
+  });
+
+  it('moves previous and next only across image assets', () => {
+    expect(adjacentImageAssetId(memory, 'asset-a', 1)).toBe('asset-b');
+    expect(adjacentImageAssetId(memory, 'asset-b', -1)).toBe('asset-a');
+    expect(adjacentImageAssetId(memory, 'missing', 1)).toBeNull();
   });
 });

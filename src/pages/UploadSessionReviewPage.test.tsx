@@ -8,6 +8,7 @@ import type {
 } from '../../shared/contracts';
 import {
   reviewRecoveryMode,
+  reviewPreviewUrl,
 } from './UploadSessionReviewPage';
 
 function session(
@@ -91,5 +92,48 @@ describe('reviewRecoveryMode', () => {
         true,
       ),
     ).toBe('retry');
+  });
+});
+
+describe('reviewPreviewUrl', () => {
+  it('prefers a local Blob URL over the persisted Session Thumbnail', () => {
+    expect(
+      reviewPreviewUrl(
+        'session/a',
+        'file ? ',
+        'uploaded',
+        'blob:http://local-preview',
+      ),
+    ).toBe('blob:http://local-preview');
+  });
+
+  it('uses the encoded Session Thumbnail URL for uploaded files without a local Blob', () => {
+    expect(
+      reviewPreviewUrl(
+        'session/a',
+        'file ? ',
+        'uploaded',
+        null,
+      ),
+    ).toBe(
+      '/api/upload-sessions/session%2Fa/files/file%20%3F%20/thumbnail',
+    );
+  });
+
+  it.each([
+    'pending',
+    'authorized',
+    'uploading',
+    'failed',
+    'skipped',
+  ] as const)('returns no preview for %s files without a local Blob', (status) => {
+    expect(
+      reviewPreviewUrl(
+        'session-a',
+        'file-a',
+        status,
+        null,
+      ),
+    ).toBeNull();
   });
 });

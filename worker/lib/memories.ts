@@ -11,6 +11,7 @@ import type { Env, OwnerIdentity } from '../env';
 import { optionalOwner } from './auth';
 import { planAssetDeletion } from './asset-deletion';
 import { resolveVisibleCoverAssetId } from './asset-visibility';
+import { imageAssetObjectKeys } from './image-session-lifecycle';
 import { HttpError, noContent, notFound } from './responses';
 import {
   assertOwnedObjectKey,
@@ -52,10 +53,6 @@ interface AssetDescriptorRow {
   status: Memory['status'];
 }
 
-interface ObjectKeyRow {
-  object_key: string;
-}
-
 interface AssetOwnerRow {
   asset_id: string;
   memory_id: string;
@@ -64,12 +61,19 @@ interface AssetOwnerRow {
 interface AssetDeletionTargetRow {
   memory_id: string;
   object_key: string;
+  media_type: MemoryAsset['type'];
   cover_asset_id: string;
 }
 
 interface AssetOrderRow {
   id: string;
   sort_order: number;
+}
+
+interface ObjectKeyRow {
+  id: string;
+  object_key: string;
+  media_type: MemoryAsset['type'];
 }
 
 export async function listMemories(env: Env, isOwner: boolean): Promise<Memory[]> {
@@ -317,6 +321,7 @@ export async function deleteAsset(
     SELECT
       a.memory_id,
       a.object_key,
+      a.media_type,
       m.cover_asset_id
     FROM media_assets a
     INNER JOIN memories m ON m.id = a.memory_id
@@ -327,6 +332,9 @@ export async function deleteAsset(
     .first<AssetDeletionTargetRow>();
 
   if (!target) throw new HttpError(404, 'Asset not found.');
+  const targetKeys = target.media_type === 'image'
+    ? imageAssetObjectKeys(assetId, target.object_key)
+    : [target.object_key];
 
   const assetRows = await env.DB.prepare(`
     SELECT id, sort_order
@@ -350,7 +358,7 @@ export async function deleteAsset(
     if (!result.meta.changes) throw new HttpError(404, 'Memory not found.');
 
     ctx.waitUntil(
-      Promise.allSettled([env.MEDIA.delete(target.object_key)]).then(() => undefined),
+      Promise.allSettled(targetKeys.map((key) => env.MEDIA.delete(key))).then(() => undefined),
     );
 
     return {
@@ -389,7 +397,7 @@ export async function deleteAsset(
   if (!deleteResult?.meta.changes) throw new HttpError(404, 'Asset not found.');
 
   ctx.waitUntil(
-    Promise.allSettled([env.MEDIA.delete(target.object_key)]).then(() => undefined),
+    Promise.allSettled(targetKeys.map((key) => env.MEDIA.delete(key))).then(() => undefined),
   );
 
   return {
@@ -405,12 +413,15 @@ export async function deleteMemory(
   memoryId: string,
   ctx: ExecutionContext,
 ): Promise<Response> {
-  const keys = await env.DB.prepare('SELECT object_key FROM media_assets WHERE memory_id = ?')
+  const keys = await env.DB.prepare('SELECT id, object_key, media_type FROM media_assets WHERE memory_id = ?')
     .bind(memoryId)
     .all<ObjectKeyRow>();
   const result = await env.DB.prepare('DELETE FROM memories WHERE id = ?').bind(memoryId).run();
   if (!result.meta.changes) return notFound();
-  ctx.waitUntil(Promise.allSettled(keys.results.map((row) => env.MEDIA.delete(row.object_key))).then(() => undefined));
+  const objectKeys = keys.results.flatMap((row) => row.media_type === 'image'
+    ? imageAssetObjectKeys(row.id, row.object_key)
+    : [row.object_key]);
+  ctx.waitUntil(Promise.allSettled(objectKeys.map((key) => env.MEDIA.delete(key))).then(() => undefined));
   return noContent();
 }
 
@@ -510,17 +521,36 @@ function aggregateMemories(rows: JoinedMemoryRow[], isOwner: boolean): Memory[] 
       };
       memories.set(row.memory_id, memory);
     }
-    memory.assets.push({
-      id: row.asset_id,
-      type: row.media_type,
-      url: `/api/assets/${encodeURIComponent(row.asset_id)}`,
-      downloadUrl: `/api/assets/${encodeURIComponent(row.asset_id)}/download`,
-      filename: row.original_filename,
-      mimeType: row.mime_type,
-      sizeBytes: row.size_bytes,
-      sortOrder: row.sort_order,
-      visibility: row.asset_visibility,
-    });
+    if (row.media_type === 'image') {
+      memory.assets.push({
+        id: row.asset_id,
+        type: 'image',
+        thumbnailUrl: `/api/assets/${encodeURIComponent(row.asset_id)}/thumbnail`,
+        previewUrl: `/api/assets/${encodeURIComponent(row.asset_id)}/preview`,
+        originalUrl: isOwner
+          ? `/api/assets/${encodeURIComponent(row.asset_id)}/original`
+          : null,
+        url: `/api/assets/${encodeURIComponent(row.asset_id)}`,
+        downloadUrl: `/api/assets/${encodeURIComponent(row.asset_id)}/download`,
+        filename: row.original_filename,
+        mimeType: row.mime_type,
+        sizeBytes: row.size_bytes,
+        sortOrder: row.sort_order,
+        visibility: row.asset_visibility,
+      });
+    } else {
+      memory.assets.push({
+        id: row.asset_id,
+        type: 'video',
+        url: `/api/assets/${encodeURIComponent(row.asset_id)}`,
+        downloadUrl: `/api/assets/${encodeURIComponent(row.asset_id)}/download`,
+        filename: row.original_filename,
+        mimeType: row.mime_type,
+        sizeBytes: row.size_bytes,
+        sortOrder: row.sort_order,
+        visibility: row.asset_visibility,
+      });
+    }
   }
 
   const aggregated = [...memories.values()];

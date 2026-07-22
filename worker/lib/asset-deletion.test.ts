@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { planAssetDeletion } from './asset-deletion';
+import { imageAssetObjectKeys } from './image-session-lifecycle';
 
 const assets = [
   { id: 'asset-a', sortOrder: 0 },
@@ -36,5 +37,15 @@ describe('planAssetDeletion', () => {
       deleteMemory: true,
       replacementCoverAssetId: null,
     });
+  });
+});
+
+describe('imageAssetObjectKeys', () => {
+  it('includes the Original and both deterministic image derivatives', () => {
+    expect(imageAssetObjectKeys('asset-1', 'originals/owner/session/file.jpg')).toEqual([
+      'originals/owner/session/file.jpg',
+      'derivatives/v1/assets/asset-1/thumbnail.webp',
+      'derivatives/v1/assets/asset-1/preview.webp',
+    ]);
   });
 });

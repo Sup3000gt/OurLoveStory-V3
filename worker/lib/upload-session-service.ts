@@ -20,6 +20,16 @@ import {
 } from '../../shared/upload-constants';
 import type { Env, OwnerIdentity } from '../env';
 import { getMemory } from './memories';
+import { sessionThumbnailKey } from './image-derivatives';
+import {
+  readOrGenerateDerivative,
+  type GeneratedDerivative,
+} from './image-transformer';
+import {
+  deleteSessionImageObjects,
+  finalizeConfirmedImages,
+  type ConfirmedImageMapping,
+} from './image-session-lifecycle';
 import {
   findExistingMemoryHashes,
   getOwnedMemoryStats,
@@ -51,6 +61,11 @@ interface InitialFilePlan {
   id: string;
   status: 'pending' | 'skipped';
   duplicate: boolean;
+}
+
+interface ConfirmedSessionResult {
+  memory: Memory;
+  mappings: ConfirmedImageMapping[];
 }
 
 export async function createUploadSession(
@@ -791,6 +806,8 @@ export async function confirmUploadSession(
   owner: OwnerIdentity,
   sessionId: string,
   requestId: string,
+  ctx: ExecutionContext,
+  origin: string,
 ): Promise<Memory> {
   const sessionRow = await requireOwnedSessionRow(
     env,
@@ -871,7 +888,7 @@ export async function confirmUploadSession(
     },
   );
 
-  const memory = sessionRow.session_kind === 'create'
+  const confirmed = sessionRow.session_kind === 'create'
     ? await confirmCreateSession(
         env,
         owner,
@@ -885,17 +902,19 @@ export async function confirmUploadSession(
         accepted,
       );
 
+  ctx.waitUntil(finalizeConfirmedImages(env, confirmed.mappings, origin));
+
   logUploadEvent({
     level: 'info',
     requestId,
     ownerId: owner.userId,
-    memoryId: memory.id,
+    memoryId: confirmed.memory.id,
     sessionId,
     stage: 'confirm',
     itemCount: accepted.length,
   });
 
-  return memory;
+  return confirmed.memory;
 }
 
 export async function abandonUploadSession(
@@ -916,10 +935,6 @@ export async function abandonUploadSession(
     );
   }
 
-  const keys = session.files
-    .map((file) => file.objectKey)
-    .filter((key): key is string => Boolean(key));
-
   await env.DB.prepare(`
     UPDATE upload_sessions
     SET session_status = 'abandoned',
@@ -931,9 +946,7 @@ export async function abandonUploadSession(
     .run();
 
   try {
-    if (keys.length > 0) {
-      await env.MEDIA.delete(keys);
-    }
+    await deleteSessionImageObjects(env, sessionId, session.files);
     await env.DB.prepare(`
       DELETE FROM upload_sessions
       WHERE id = ?
@@ -965,7 +978,7 @@ export async function abandonUploadSession(
     memoryId: session.memoryId,
     sessionId,
     stage: 'abandon',
-    itemCount: keys.length,
+    itemCount: session.files.length,
   });
 }
 
@@ -974,7 +987,7 @@ async function confirmCreateSession(
   owner: OwnerIdentity,
   session: UploadSessionRow,
   accepted: UploadSessionFileRow[],
-): Promise<Memory> {
+): Promise<ConfirmedSessionResult> {
   if (
     !session.title
     || !session.location
@@ -1070,7 +1083,16 @@ async function confirmCreateSession(
       'The Memory was confirmed but could not be reloaded.',
     );
   }
-  return memory;
+  return {
+    memory,
+    mappings: accepted.map((file) => ({
+      sessionId: session.id,
+      sessionFileId: file.id,
+      assetId: assetIds.get(file.id)!,
+      objectKey: file.object_key!,
+      sizeBytes: file.size_bytes,
+    })),
+  };
 }
 
 async function confirmAppendSession(
@@ -1078,7 +1100,7 @@ async function confirmAppendSession(
   owner: OwnerIdentity,
   session: UploadSessionRow,
   accepted: UploadSessionFileRow[],
-): Promise<Memory> {
+): Promise<ConfirmedSessionResult> {
   if (!session.memory_id) {
     throw new HttpError(
       500,
@@ -1185,7 +1207,16 @@ async function confirmAppendSession(
       'The Memory was updated but could not be reloaded.',
     );
   }
-  return memory;
+  return {
+    memory,
+    mappings: accepted.map((file) => ({
+      sessionId: session.id,
+      sessionFileId: file.id,
+      assetId: assetIds.get(file.id)!,
+      objectKey: file.object_key!,
+      sizeBytes: file.size_bytes,
+    })),
+  };
 }
 
 function createAssetInsert(
@@ -1408,5 +1439,39 @@ async function mapWithConcurrency<T>(
         await worker(item);
       }
     }),
+  );
+}
+
+export async function readUploadSessionThumbnail(
+  env: Env,
+  owner: OwnerIdentity,
+  sessionId: string,
+  fileId: string,
+): Promise<GeneratedDerivative> {
+  const file = await getOwnedSessionFile(
+    env,
+    sessionId,
+    fileId,
+    owner.userId,
+  );
+  if (
+    !file
+    || file.file_status !== 'uploaded'
+    || !file.object_key
+  ) {
+    throw new HttpError(404, 'Session thumbnail not found.');
+  }
+
+  return readOrGenerateDerivative(
+    env,
+    {
+      kind: 'upload-session',
+      sessionId,
+      sessionFileId: file.id,
+      objectKey: file.object_key,
+      sizeBytes: file.size_bytes,
+    },
+    'thumbnail',
+    sessionThumbnailKey(sessionId, file.id),
   );
 }

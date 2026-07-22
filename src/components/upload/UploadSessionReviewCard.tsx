@@ -1,4 +1,7 @@
 import {
+  useState,
+} from 'react';
+import {
   ChevronDown,
   ChevronUp,
   Globe2,
@@ -19,11 +22,16 @@ import type {
   ReviewMoveDirection,
 } from '../../lib/upload-session-review';
 import {
+  appendRetryNonce,
+} from '../../lib/image-assets';
+import {
   SessionFilePlaceholder,
 } from './SessionFilePlaceholder';
 
 export interface UploadSessionReviewCardLabels {
   missingPreview: string;
+  unavailablePreview: string;
+  retryPreview: string;
   public: string;
   private: string;
   duplicateSkipped: string;
@@ -91,6 +99,24 @@ export function UploadSessionReviewCard({
     && file.skipped
     && !file.allowDuplicate;
 
+  const [failedPreviewUrl, setFailedPreviewUrl] =
+    useState<string | null>(null);
+  const [retryNonce, setRetryNonce] =
+    useState<number | null>(null);
+
+  const previewFailed =
+    previewUrl !== null
+    && failedPreviewUrl === previewUrl;
+
+  const imageUrl =
+    previewFailed
+    && retryNonce !== null
+      ? appendRetryNonce(
+          previewUrl,
+          retryNonce,
+        )
+      : previewUrl;
+
   function startDrag(
     event:
       DragEvent<HTMLElement>,
@@ -148,11 +174,40 @@ export function UploadSessionReviewCard({
       onDrop={drop}
     >
       <div className="review-card-media">
-        {previewUrl ? (
-          <img
-            src={previewUrl}
-            alt={file.filename}
-          />
+        {imageUrl ? (
+          <>
+            <img
+              src={imageUrl}
+              alt={file.filename}
+              onError={() => {
+                setFailedPreviewUrl(
+                  previewUrl,
+                );
+                setRetryNonce(Date.now());
+              }}
+            />
+            {previewFailed ? (
+              <div
+                className="review-preview-error"
+                role="status"
+              >
+                <span>
+                  {labels
+                    .unavailablePreview}
+                </span>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setRetryNonce(
+                      Date.now(),
+                    )
+                  }
+                >
+                  {labels.retryPreview}
+                </button>
+              </div>
+            ) : null}
+          </>
         ) : (
           <SessionFilePlaceholder
             filename={
