@@ -8,6 +8,7 @@ import {
   listUploadSessions,
   matchUploadSessionFiles,
   readUploadSession,
+  readUploadSessionThumbnail,
   recordSessionFailure,
   recordSessionUpload,
   updateSessionFile,
@@ -37,6 +38,7 @@ export type UploadSessionRoute =
   | { action: 'record-uploaded'; sessionId: string }
   | { action: 'record-failed'; sessionId: string }
   | { action: 'file'; sessionId: string; fileId: string }
+  | { action: 'thumbnail'; sessionId: string; fileId: string }
   | { action: 'review'; sessionId: string }
   | { action: 'confirm'; sessionId: string };
 
@@ -86,6 +88,18 @@ export function matchUploadSessionRoute(
   ) {
     return {
       action: 'file',
+      sessionId: segments[0]!,
+      fileId: segments[2]!,
+    };
+  }
+
+  if (
+    segments.length === 4
+    && segments[1] === 'files'
+    && segments[3] === 'thumbnail'
+  ) {
+    return {
+      action: 'thumbnail',
       sessionId: segments[0]!,
       fileId: segments[2]!,
     };
@@ -241,6 +255,29 @@ export async function handleUploadSessionRoute(
           ),
         ),
       );
+
+    case 'thumbnail': {
+      if (request.method !== 'GET' && request.method !== 'HEAD') {
+        return methodNotAllowed(['GET', 'HEAD']);
+      }
+      const derivative = await readUploadSessionThumbnail(
+        env,
+        owner,
+        route.sessionId,
+        route.fileId,
+      );
+      return new Response(
+        request.method === 'HEAD' ? null : derivative.bytes,
+        {
+          status: 200,
+          headers: {
+            'cache-control': 'private, no-store',
+            'content-type': derivative.contentType,
+            'x-content-type-options': 'nosniff',
+          },
+        },
+      );
+    }
 
     case 'review':
       if (request.method !== 'PATCH') {

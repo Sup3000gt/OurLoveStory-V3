@@ -29,6 +29,18 @@ describe('matchUploadSessionRoute', () => {
     });
   });
 
+  it('matches a Session thumbnail', () => {
+    expect(
+      matchUploadSessionRoute(
+        '/api/upload-sessions/s/files/f/thumbnail',
+      ),
+    ).toEqual({
+      action: 'thumbnail',
+      sessionId: 's',
+      fileId: 'f',
+    });
+  });
+
   it('does not match unrelated routes', () => {
     expect(matchUploadSessionRoute('/api/memories')).toBeNull();
   });
