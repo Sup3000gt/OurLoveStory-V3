@@ -111,7 +111,7 @@ export function matchUploadSessionRoute(
 export async function handleUploadSessionRoute(
   request: Request,
   env: Env,
-  _ctx: ExecutionContext,
+  ctx: ExecutionContext,
   owner: OwnerIdentity,
   route: UploadSessionRoute,
   requestId: string,
@@ -304,6 +304,8 @@ export async function handleUploadSessionRoute(
           owner,
           route.sessionId,
           requestId,
+          ctx,
+          new URL(request.url).origin,
         ),
       );
   }

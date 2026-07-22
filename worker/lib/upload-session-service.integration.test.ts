@@ -40,6 +40,11 @@ let mf: Miniflare;
 let db: D1Database;
 let media: R2Bucket;
 let env: Env;
+const testContext = {
+  waitUntil(promise: Promise<unknown>) {
+    void promise.catch(() => undefined);
+  },
+} as unknown as ExecutionContext;
 
 beforeEach(async () => {
   mf = new Miniflare({
@@ -172,6 +177,8 @@ describe('upload Session service with real D1 and R2 bindings', () => {
       owner,
       sessionId,
       'request-create-confirm',
+      testContext,
+      'https://example.test',
     );
 
     expect(memory.title).toBe('Create Test');
@@ -259,6 +266,8 @@ describe('upload Session service with real D1 and R2 bindings', () => {
       owner,
       sessionId,
       'request-append-confirm',
+      testContext,
+      'https://example.test',
     );
 
     const rows = await db.prepare(`
@@ -363,6 +372,8 @@ describe('upload Session service with real D1 and R2 bindings', () => {
         owner,
         sessionId,
         'request-rollback',
+        testContext,
+        'https://example.test',
       ),
     ).rejects.toBeTruthy();
 
@@ -460,6 +471,8 @@ describe('upload Session service with real D1 and R2 bindings', () => {
         owner,
         sessionId,
         'request-capacity',
+        testContext,
+        'https://example.test',
       ),
     ).rejects.toMatchObject({
       status: 409,
