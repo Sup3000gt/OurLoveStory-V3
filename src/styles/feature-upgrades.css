@@ -682,7 +682,16 @@
 }
 
 .review-order-actions {
+  display: grid;
+  grid-template-columns: 1fr;
+  align-items: stretch;
   padding-top: 0;
+}
+
+.review-order-actions button {
+  width: 100%;
+  min-width: 0;
+  justify-content: center;
 }
 
 .review-public-warning {

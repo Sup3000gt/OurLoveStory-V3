@@ -1,5 +1,7 @@
 import { act } from 'react';
 import { createRoot } from 'react-dom/client';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import {
   afterEach,
   describe,
@@ -131,6 +133,22 @@ describe('UploadSessionReviewGrid thumbnail recovery', () => {
 
     expect(container.querySelector('img')?.getAttribute('src')).toBe(
       '/api/thumbnail?size=small&retry=123',
+    );
+  });
+});
+
+describe('UploadSessionReviewGrid order controls', () => {
+  it('keeps move controls in one equal-width column', () => {
+    const styles = readFileSync(
+      resolve(process.cwd(), 'src/styles/feature-upgrades.css'),
+      'utf8',
+    );
+
+    expect(styles).toMatch(
+      /\.review-order-actions\s*\{[\s\S]*?display:\s*grid;[\s\S]*?grid-template-columns:\s*1fr;/,
+    );
+    expect(styles).toMatch(
+      /\.review-order-actions button\s*\{[\s\S]*?width:\s*100%;[\s\S]*?justify-content:\s*center;/,
     );
   });
 });
