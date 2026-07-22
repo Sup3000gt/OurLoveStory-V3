@@ -152,3 +152,22 @@ describe('UploadSessionReviewGrid order controls', () => {
     );
   });
 });
+
+describe('UploadSessionReviewGrid card controls', () => {
+  it('keeps visibility, cover, and remove actions aligned', () => {
+    const styles = readFileSync(
+      resolve(process.cwd(), 'src/styles/feature-upgrades.css'),
+      'utf8',
+    );
+
+    expect(styles).toMatch(
+      /\.review-card-controls\s*\{[\s\S]*?display:\s*grid;[\s\S]*?grid-template-columns:\s*1fr;/,
+    );
+    expect(styles).toMatch(
+      /\.review-visibility-actions\s*\{[\s\S]*?display:\s*grid;[\s\S]*?grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\);/,
+    );
+    expect(styles).toMatch(
+      /\.review-card-controls > \.cover-button,[\s\S]*?\.review-card-controls > \.asset-delete-button,[\s\S]*?\.review-card-controls > \.secondary-button\s*\{[\s\S]*?width:\s*100%;/,
+    );
+  });
+});
