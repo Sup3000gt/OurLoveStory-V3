@@ -10,6 +10,13 @@ interface GalleryPageProps {
   isLoading: boolean;
   error: Error | null;
   isOwner: boolean;
+  currentPage: number;
+  totalPages: number;
+  hasPreviousPage: boolean;
+  hasNextPage: boolean;
+  isFetchingPage: boolean;
+  onPreviousPage: () => void;
+  onNextPage: () => void;
 }
 
 export function GalleryPage({
@@ -17,6 +24,13 @@ export function GalleryPage({
   isLoading,
   error,
   isOwner,
+  currentPage,
+  totalPages,
+  hasPreviousPage,
+  hasNextPage,
+  isFetchingPage,
+  onPreviousPage,
+  onNextPage,
 }: GalleryPageProps) {
   const { t } = useTranslation();
   const [category, setCategory] = useState<string>('All');
@@ -57,6 +71,29 @@ export function GalleryPage({
       ) : null}
       {filtered.length > 0 ? (
         <GalleryGrid memories={filtered} variant="masonry" isOwner={isOwner} />
+      ) : null}
+      {totalPages > 0 && (hasPreviousPage || hasNextPage) ? (
+        <nav className="gallery-pagination" aria-label={t('gallery.paginationLabel')}>
+          <button
+            className="secondary-button"
+            type="button"
+            onClick={onPreviousPage}
+            disabled={!hasPreviousPage || isFetchingPage}
+          >
+            {t('gallery.previousPage')}
+          </button>
+          <span aria-live="polite">
+            {t('gallery.page', { current: currentPage })}
+          </span>
+          <button
+            className="secondary-button"
+            type="button"
+            onClick={onNextPage}
+            disabled={!hasNextPage || isFetchingPage}
+          >
+            {isFetchingPage ? t('gallery.loadingPage') : t('gallery.nextPage')}
+          </button>
+        </nav>
       ) : null}
     </main>
   );

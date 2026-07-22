@@ -3,6 +3,7 @@ import {
   Route,
   Routes,
 } from 'react-router-dom';
+import { useState } from 'react';
 import {
   Header,
 } from './components/Header';
@@ -15,6 +16,7 @@ import {
 import {
   useOwnerSession,
 } from './hooks/useOwnerSession';
+import { getGalleryPageState } from './lib/gallery-pagination';
 import {
   AddPhotosPage,
 } from './pages/AddPhotosPage';
@@ -40,8 +42,37 @@ export default function App() {
   const ownerSession =
     useOwnerSession();
 
-  const memories =
+  const memoryQuery =
     useMemories();
+
+  const [galleryPageIndex, setGalleryPageIndex] = useState(0);
+  const memoryPages = memoryQuery.data?.pages;
+  const memories =
+    memoryPages?.flatMap((page) => page.memories)
+    ?? [];
+  const galleryPage = getGalleryPageState(
+    memoryPages,
+    galleryPageIndex,
+    Boolean(memoryQuery.hasNextPage),
+  );
+
+  const goToPreviousGalleryPage = () => {
+    setGalleryPageIndex((pageIndex) => Math.max(pageIndex - 1, 0));
+  };
+
+  const goToNextGalleryPage = () => {
+    if (galleryPageIndex < galleryPage.totalPages - 1) {
+      setGalleryPageIndex((pageIndex) => pageIndex + 1);
+      return;
+    }
+
+    if (!memoryQuery.hasNextPage || memoryQuery.isFetchingNextPage) return;
+
+    void memoryQuery.fetchNextPage().then((result) => {
+      const pages = result.data?.pages;
+      if (pages?.length) setGalleryPageIndex(pages.length - 1);
+    });
+  };
 
   const isOwner =
     ownerSession.data?.isOwner
@@ -65,14 +96,13 @@ export default function App() {
             element={
               <HomePage
                 memories={
-                  memories.data
-                  ?? []
+                  memories
                 }
                 isLoading={
-                  memories.isLoading
+                  memoryQuery.isLoading
                 }
                 error={
-                  memories.error
+                  memoryQuery.error
                 }
                 isOwner={isOwner}
               />
@@ -84,16 +114,22 @@ export default function App() {
             element={
               <GalleryPage
                 memories={
-                  memories.data
-                  ?? []
+                  galleryPage.memories
                 }
                 isLoading={
-                  memories.isLoading
+                  memoryQuery.isLoading
                 }
                 error={
-                  memories.error
+                  memoryQuery.error
                 }
                 isOwner={isOwner}
+                currentPage={galleryPage.currentPage}
+                totalPages={galleryPage.totalPages}
+                hasPreviousPage={galleryPage.hasPreviousPage}
+                hasNextPage={galleryPage.hasNextPage}
+                isFetchingPage={memoryQuery.isFetchingNextPage}
+                onPreviousPage={goToPreviousGalleryPage}
+                onNextPage={goToNextGalleryPage}
               />
             }
           />
@@ -103,11 +139,10 @@ export default function App() {
             element={
               <AddPhotosPage
                 memories={
-                  memories.data
-                  ?? []
+                  memories
                 }
                 isLoading={
-                  memories.isLoading
+                  memoryQuery.isLoading
                 }
                 isOwner={isOwner}
               />
@@ -119,11 +154,10 @@ export default function App() {
             element={
               <MemoryDetailPage
                 memories={
-                  memories.data
-                  ?? []
+                  memories
                 }
                 isLoading={
-                  memories.isLoading
+                  memoryQuery.isLoading
                 }
                 isOwner={isOwner}
               />
