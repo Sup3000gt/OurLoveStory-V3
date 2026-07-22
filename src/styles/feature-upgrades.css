@@ -516,7 +516,8 @@
 .upload-session-review-grid {
   display: grid;
   grid-template-columns:
-    repeat(auto-fill, minmax(180px, 1fr));
+    repeat(auto-fill, minmax(240px, 320px));
+  justify-content: start;
   gap: 16px;
 }
 
