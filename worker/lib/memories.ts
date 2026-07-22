@@ -510,17 +510,36 @@ function aggregateMemories(rows: JoinedMemoryRow[], isOwner: boolean): Memory[] 
       };
       memories.set(row.memory_id, memory);
     }
-    memory.assets.push({
-      id: row.asset_id,
-      type: row.media_type,
-      url: `/api/assets/${encodeURIComponent(row.asset_id)}`,
-      downloadUrl: `/api/assets/${encodeURIComponent(row.asset_id)}/download`,
-      filename: row.original_filename,
-      mimeType: row.mime_type,
-      sizeBytes: row.size_bytes,
-      sortOrder: row.sort_order,
-      visibility: row.asset_visibility,
-    });
+    if (row.media_type === 'image') {
+      memory.assets.push({
+        id: row.asset_id,
+        type: 'image',
+        thumbnailUrl: `/api/assets/${encodeURIComponent(row.asset_id)}/thumbnail`,
+        previewUrl: `/api/assets/${encodeURIComponent(row.asset_id)}/preview`,
+        originalUrl: isOwner
+          ? `/api/assets/${encodeURIComponent(row.asset_id)}/original`
+          : null,
+        url: `/api/assets/${encodeURIComponent(row.asset_id)}`,
+        downloadUrl: `/api/assets/${encodeURIComponent(row.asset_id)}/download`,
+        filename: row.original_filename,
+        mimeType: row.mime_type,
+        sizeBytes: row.size_bytes,
+        sortOrder: row.sort_order,
+        visibility: row.asset_visibility,
+      });
+    } else {
+      memory.assets.push({
+        id: row.asset_id,
+        type: 'video',
+        url: `/api/assets/${encodeURIComponent(row.asset_id)}`,
+        downloadUrl: `/api/assets/${encodeURIComponent(row.asset_id)}/download`,
+        filename: row.original_filename,
+        mimeType: row.mime_type,
+        sizeBytes: row.size_bytes,
+        sortOrder: row.sort_order,
+        visibility: row.asset_visibility,
+      });
+    }
   }
 
   const aggregated = [...memories.values()];

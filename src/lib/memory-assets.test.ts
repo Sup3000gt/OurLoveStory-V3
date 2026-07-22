@@ -17,6 +17,9 @@ const memory: Memory = {
     {
       id: 'asset-a',
       type: 'image',
+      thumbnailUrl: '/api/assets/asset-a/thumbnail',
+      previewUrl: '/api/assets/asset-a/preview',
+      originalUrl: '/api/assets/asset-a/original',
       url: '/api/assets/asset-a',
       downloadUrl: '/api/assets/asset-a/download',
       filename: 'a.jpg',
@@ -28,6 +31,9 @@ const memory: Memory = {
     {
       id: 'asset-b',
       type: 'image',
+      thumbnailUrl: '/api/assets/asset-b/thumbnail',
+      previewUrl: '/api/assets/asset-b/preview',
+      originalUrl: '/api/assets/asset-b/original',
       url: '/api/assets/asset-b',
       downloadUrl: '/api/assets/asset-b/download',
       filename: 'b.jpg',

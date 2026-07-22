@@ -11,9 +11,12 @@ export type Visibility = 'public' | 'private';
 export type MemoryStatus = 'draft' | 'published';
 export type MediaType = 'image' | 'video';
 
-export interface MemoryAsset {
+export interface ImageAsset {
   id: string;
-  type: MediaType;
+  type: 'image';
+  thumbnailUrl: string;
+  previewUrl: string;
+  originalUrl: string | null;
   url: string;
   downloadUrl: string;
   filename: string;
@@ -22,6 +25,20 @@ export interface MemoryAsset {
   sortOrder: number;
   visibility: Visibility;
 }
+
+export interface VideoAsset {
+  id: string;
+  type: 'video';
+  url: string;
+  downloadUrl: string;
+  filename: string;
+  mimeType: string;
+  sizeBytes: number;
+  sortOrder: number;
+  visibility: Visibility;
+}
+
+export type MemoryAsset = ImageAsset | VideoAsset;
 
 export interface Memory {
   id: string;
