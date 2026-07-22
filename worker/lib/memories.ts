@@ -4,6 +4,7 @@ import {
   type DeleteAssetResponse,
   type Memory,
   type MemoryAsset,
+  type MemoryPage,
   type UpdateAssetVisibilityResponse,
   type UpdateMemoryRequest,
 } from '../../shared/contracts';
@@ -13,6 +14,12 @@ import { planAssetDeletion } from './asset-deletion';
 import { resolveVisibleCoverAssetId } from './asset-visibility';
 import { serveImageDerivative, serveImageOriginal } from './image-delivery';
 import { imageAssetObjectKeys } from './image-session-lifecycle';
+import {
+  decodeMemoryCursor,
+  encodeMemoryCursor,
+  MAX_MEMORY_PAGE_SIZE,
+  type MemoryCursor,
+} from './memory-pagination';
 import { HttpError, noContent, notFound } from './responses';
 import {
   assertOwnedObjectKey,
@@ -78,11 +85,65 @@ interface ObjectKeyRow {
   media_type: MemoryAsset['type'];
 }
 
-export async function listMemories(env: Env, isOwner: boolean): Promise<Memory[]> {
+interface ListMemoriesOptions {
+  limit: number;
+  cursor?: string | null;
+}
+
+export async function listMemories(
+  env: Env,
+  isOwner: boolean,
+  options: ListMemoriesOptions = { limit: MAX_MEMORY_PAGE_SIZE },
+): Promise<MemoryPage> {
+  const limit = Math.min(MAX_MEMORY_PAGE_SIZE, Math.max(1, Math.floor(options.limit)));
+  const cursor = options.cursor ? decodeMemoryCursor(options.cursor) : null;
+  if (options.cursor && !cursor) {
+    throw new ValidationError('Invalid memory cursor.');
+  }
+
   const accessClause = isOwner
     ? '1 = 1'
     : "m.status = 'published' AND a.visibility = 'public'";
+  const pageAccessClause = isOwner
+    ? '1 = 1'
+    : `page.status = 'published' AND EXISTS (
+        SELECT 1
+        FROM media_assets visible_asset
+        WHERE visible_asset.memory_id = page.id
+          AND visible_asset.visibility = 'public'
+      )`;
+  const cursorClause = cursor
+    ? `AND (
+        page.taken_at < ?
+        OR (page.taken_at = ? AND page.created_at < ?)
+        OR (
+          page.taken_at = ?
+          AND page.created_at = ?
+          AND page.id < ?
+        )
+      )`
+    : '';
+  const bindings: unknown[] = cursor
+    ? [
+        cursor.takenAt,
+        cursor.takenAt,
+        cursor.createdAt,
+        cursor.takenAt,
+        cursor.createdAt,
+        cursor.id,
+        limit + 1,
+      ]
+    : [limit + 1];
+
   const result = await env.DB.prepare(`
+    WITH page_memories AS (
+      SELECT page.id
+      FROM memories page
+      WHERE ${pageAccessClause}
+      ${cursorClause}
+      ORDER BY page.taken_at DESC, page.created_at DESC, page.id DESC
+      LIMIT ?
+    )
     SELECT
       m.id AS memory_id,
       m.title,
@@ -103,13 +164,29 @@ export async function listMemories(env: Env, isOwner: boolean): Promise<Memory[]
       a.size_bytes,
       a.sort_order,
       a.visibility AS asset_visibility
-    FROM memories m
+    FROM page_memories
+    INNER JOIN memories m ON m.id = page_memories.id
     INNER JOIN media_assets a ON a.memory_id = m.id
     WHERE ${accessClause}
-    ORDER BY m.taken_at DESC, m.created_at DESC, a.sort_order ASC
-  `).all<JoinedMemoryRow>();
+    ORDER BY m.taken_at DESC, m.created_at DESC, m.id DESC, a.sort_order ASC
+  `).bind(...bindings).all<JoinedMemoryRow>();
 
-  return aggregateMemories(result.results, isOwner);
+  const aggregated = aggregateMemories(result.results, isOwner);
+  const hasNextPage = aggregated.length > limit;
+  const memories = aggregated.slice(0, limit);
+  const lastMemory = memories.at(-1);
+  const nextCursor: MemoryCursor | null = hasNextPage && lastMemory
+    ? {
+        takenAt: lastMemory.date,
+        createdAt: lastMemory.createdAt,
+        id: lastMemory.id,
+      }
+    : null;
+
+  return {
+    memories,
+    nextCursor: nextCursor ? encodeMemoryCursor(nextCursor) : null,
+  };
 }
 
 export async function getMemory(env: Env, memoryId: string, isOwner: boolean): Promise<Memory | null> {

@@ -35,6 +35,7 @@ import {
   uploadSessionsQueryKey,
   useUploadSessions,
 } from '../hooks/useUploadSessions';
+import { useMemory } from '../hooks/useMemory';
 import {
   useTranslation,
 } from '../i18n/useTranslation';
@@ -99,11 +100,14 @@ export function AddPhotosPage({
     setError,
   ] = useState('');
 
-  const memory =
+  const memoryFromList =
     memories.find(
       (candidate) =>
         candidate.id === memoryId,
     );
+
+  const memoryQuery = useMemory(memoryId, memoryFromList);
+  const memory = memoryFromList ?? memoryQuery.data;
 
   const activeAppend =
     memory
@@ -263,7 +267,7 @@ export function AddPhotosPage({
     }
   }
 
-  if (isLoading) {
+  if (isLoading || memoryQuery.isLoading) {
     return (
       <main className="detail-status">
         <p aria-live="polite">

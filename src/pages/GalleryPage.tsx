@@ -10,6 +10,9 @@ interface GalleryPageProps {
   isLoading: boolean;
   error: Error | null;
   isOwner: boolean;
+  hasNextPage: boolean;
+  isFetchingNextPage: boolean;
+  onLoadMore: () => void;
 }
 
 export function GalleryPage({
@@ -17,6 +20,9 @@ export function GalleryPage({
   isLoading,
   error,
   isOwner,
+  hasNextPage,
+  isFetchingNextPage,
+  onLoadMore,
 }: GalleryPageProps) {
   const { t } = useTranslation();
   const [category, setCategory] = useState<string>('All');
@@ -57,6 +63,18 @@ export function GalleryPage({
       ) : null}
       {filtered.length > 0 ? (
         <GalleryGrid memories={filtered} variant="masonry" isOwner={isOwner} />
+      ) : null}
+      {hasNextPage ? (
+        <div className="gallery-load-more">
+          <button
+            className="secondary-button"
+            type="button"
+            onClick={onLoadMore}
+            disabled={isFetchingNextPage}
+          >
+            {isFetchingNextPage ? t('gallery.loadingMore') : t('gallery.loadMore')}
+          </button>
+        </div>
       ) : null}
     </main>
   );

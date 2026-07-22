@@ -798,3 +798,13 @@
     grid-template-columns: 1fr;
   }
 }
+
+.gallery-load-more {
+  display: flex;
+  justify-content: center;
+  margin-top: 34px;
+}
+
+.gallery-load-more button {
+  min-width: 190px;
+}

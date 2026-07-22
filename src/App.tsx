@@ -40,8 +40,12 @@ export default function App() {
   const ownerSession =
     useOwnerSession();
 
-  const memories =
+  const memoryQuery =
     useMemories();
+
+  const memories =
+    memoryQuery.data?.pages.flatMap((page) => page.memories)
+    ?? [];
 
   const isOwner =
     ownerSession.data?.isOwner
@@ -65,14 +69,13 @@ export default function App() {
             element={
               <HomePage
                 memories={
-                  memories.data
-                  ?? []
+                  memories
                 }
                 isLoading={
-                  memories.isLoading
+                  memoryQuery.isLoading
                 }
                 error={
-                  memories.error
+                  memoryQuery.error
                 }
                 isOwner={isOwner}
               />
@@ -84,16 +87,18 @@ export default function App() {
             element={
               <GalleryPage
                 memories={
-                  memories.data
-                  ?? []
+                  memories
                 }
                 isLoading={
-                  memories.isLoading
+                  memoryQuery.isLoading
                 }
                 error={
-                  memories.error
+                  memoryQuery.error
                 }
                 isOwner={isOwner}
+                hasNextPage={Boolean(memoryQuery.hasNextPage)}
+                isFetchingNextPage={memoryQuery.isFetchingNextPage}
+                onLoadMore={() => { void memoryQuery.fetchNextPage(); }}
               />
             }
           />
@@ -103,11 +108,10 @@ export default function App() {
             element={
               <AddPhotosPage
                 memories={
-                  memories.data
-                  ?? []
+                  memories
                 }
                 isLoading={
-                  memories.isLoading
+                  memoryQuery.isLoading
                 }
                 isOwner={isOwner}
               />
@@ -119,11 +123,10 @@ export default function App() {
             element={
               <MemoryDetailPage
                 memories={
-                  memories.data
-                  ?? []
+                  memories
                 }
                 isLoading={
-                  memories.isLoading
+                  memoryQuery.isLoading
                 }
                 isOwner={isOwner}
               />

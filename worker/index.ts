@@ -18,6 +18,7 @@ import {
   handleImageRoute,
   matchImageRoute,
 } from './lib/image-routes';
+import { normalizeMemoryPageSize } from './lib/memory-pagination';
 import {
   handleError,
   json,
@@ -106,12 +107,14 @@ export default {
             request,
             env,
           );
-          return json({
-            memories: await listMemories(
-              env,
-              Boolean(owner),
-            ),
-          });
+          return json(await listMemories(
+            env,
+            Boolean(owner),
+            {
+              limit: normalizeMemoryPageSize(url.searchParams.get('limit')),
+              cursor: url.searchParams.get('cursor'),
+            },
+          ));
         }
         if (request.method === 'POST') {
           const owner = await requireOwner(

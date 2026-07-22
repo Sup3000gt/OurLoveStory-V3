@@ -3,6 +3,7 @@ import {
 } from '@clerk/react';
 import {
   useQueryClient,
+  type InfiniteData,
 } from '@tanstack/react-query';
 import {
   ArrowLeft,
@@ -27,6 +28,7 @@ import {
 import type {
   Memory,
   MemoryAsset,
+  MemoryPage,
   Visibility,
 } from '../../shared/contracts';
 import { DerivativeImage } from '../components/DerivativeImage';
@@ -35,6 +37,7 @@ import {
   activeAppendSessionForMemory,
   useUploadSessions,
 } from '../hooks/useUploadSessions';
+import { useMemory } from '../hooks/useMemory';
 import {
   categoryTranslationKeys,
 } from '../i18n/translations';
@@ -53,6 +56,7 @@ import {
   adjacentImageAssetId,
   imageAssetsForLightbox,
 } from '../lib/memory-assets';
+import { updateMemoryPages } from '../lib/memory-pages';
 import {
   replaceAssetVisibility,
 } from '../lib/memory-visibility';
@@ -131,12 +135,15 @@ export function MemoryDetailPage({
       number | null
     >(null);
 
-  const memory =
+  const memoryFromList =
     memories.find(
       (candidate) =>
       candidate.id
         === memoryId,
     );
+
+  const memoryQuery = useMemory(memoryId, memoryFromList);
+  const memory = memoryFromList ?? memoryQuery.data;
 
   const imageAssets = memory ? imageAssetsForLightbox(memory) : [];
   const selectedImage = imageAssets.find((asset) => asset.id === selectedImageId) ?? null;
@@ -189,7 +196,7 @@ export function MemoryDetailPage({
     const snapshots =
       queryClient
         .getQueriesData<
-          Memory[]
+          InfiniteData<MemoryPage>
         >({
           queryKey: [
             'memories',
@@ -205,21 +212,21 @@ export function MemoryDetailPage({
 
     queryClient
       .setQueriesData<
-        Memory[]
+        InfiniteData<MemoryPage>
       >(
         {
           queryKey: [
             'memories',
           ],
         },
-        (current) =>
-          current
-            ? replaceAssetVisibility(
-                current,
-                asset.id,
-                nextVisibility,
-              )
-            : current,
+        (current) => updateMemoryPages(
+          current,
+          (memories) => replaceAssetVisibility(
+            memories,
+            asset.id,
+            nextVisibility,
+          ),
+        ),
       );
 
     try {
@@ -320,20 +327,20 @@ export function MemoryDetailPage({
 
       queryClient
         .setQueriesData<
-          Memory[]
+          InfiniteData<MemoryPage>
         >(
           {
             queryKey: [
               'memories',
             ],
           },
-          (current) =>
-            current
-              ? applyAssetDeletion(
-                  current,
-                  response,
-                )
-              : current,
+          (current) => updateMemoryPages(
+            current,
+            (memories) => applyAssetDeletion(
+              memories,
+              response,
+            ),
+          ),
         );
 
       await queryClient
@@ -366,7 +373,7 @@ export function MemoryDetailPage({
     }
   }
 
-  if (isLoading) {
+  if (isLoading || memoryQuery.isLoading) {
     return (
       <main className="detail-status">
         {t(

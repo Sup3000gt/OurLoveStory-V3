@@ -7,6 +7,7 @@ import type {
   CreateUploadSessionRequest,
   DeleteAssetResponse,
   Memory,
+  MemoryPage,
   OwnerSession,
   RecordSessionFailureRequest,
   RecordSessionUploadRequest,
@@ -30,6 +31,11 @@ const API_BASE_URL = (
 
 export type GetToken =
   () => Promise<string | null>;
+
+export interface MemoryPageOptions {
+  cursor?: string | null;
+  limit?: number;
+}
 
 export class ApiRequestError extends Error {
   readonly status: number;
@@ -89,12 +95,27 @@ export async function getOwnerSession(
 
 export async function getMemories(
   getToken?: GetToken,
-): Promise<Memory[]> {
-  const response = await apiRequest<{
-    memories: Memory[];
-  }>('/memories', getToken);
+  options: MemoryPageOptions = {},
+): Promise<MemoryPage> {
+  const params = new URLSearchParams({
+    limit: String(options.limit ?? 12),
+  });
+  if (options.cursor) params.set('cursor', options.cursor);
 
-  return response.memories;
+  return await apiRequest<MemoryPage>(
+    `/memories?${params.toString()}`,
+    getToken,
+  );
+}
+
+export async function getMemory(
+  memoryId: string,
+  getToken?: GetToken,
+): Promise<Memory> {
+  return await apiRequest<Memory>(
+    `/memories/${encodeURIComponent(memoryId)}`,
+    getToken,
+  );
 }
 
 export async function authorizeUploads(

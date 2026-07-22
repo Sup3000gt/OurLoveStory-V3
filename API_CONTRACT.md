@@ -41,6 +41,12 @@ A valid Clerk account that is not present in `owners` receives `signedIn: true` 
 
 Guests receive published public memories. Allowlisted owners receive public/private published memories and drafts.
 
+Supports cursor pagination:
+
+- `limit` is optional, defaults to `12`, and is capped at `24`.
+- `cursor` is an opaque cursor returned by the previous response.
+- The next request should pass the returned `nextCursor` as `cursor`.
+
 ```json
 {
   "memories": [
@@ -70,7 +76,8 @@ Guests receive published public memories. Allowlisted owners receive public/priv
       "createdAt": "2026-07-20 12:00:00",
       "updatedAt": "2026-07-20 12:00:00"
     }
-  ]
+  ],
+  "nextCursor": "opaque-cursor-or-null"
 }
 ```
 

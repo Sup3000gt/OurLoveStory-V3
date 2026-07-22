@@ -58,6 +58,11 @@ export interface Memory {
   updatedAt: string;
 }
 
+export interface MemoryPage {
+  memories: Memory[];
+  nextCursor: string | null;
+}
+
 export interface OwnerSession {
   signedIn: boolean;
   isOwner: boolean;

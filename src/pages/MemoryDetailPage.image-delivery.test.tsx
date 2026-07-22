@@ -6,7 +6,10 @@ import type { Memory } from '../../shared/contracts';
 (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 vi.mock('@clerk/react', () => ({ useAuth: () => ({ getToken: vi.fn() }) }));
-vi.mock('@tanstack/react-query', () => ({ useQueryClient: () => ({ getQueriesData: () => [], setQueriesData: vi.fn(), invalidateQueries: vi.fn(), setQueryData: vi.fn() }) }));
+vi.mock('@tanstack/react-query', () => ({
+  useQuery: () => ({ data: undefined, isLoading: false }),
+  useQueryClient: () => ({ getQueriesData: () => [], setQueriesData: vi.fn(), invalidateQueries: vi.fn(), setQueryData: vi.fn() }),
+}));
 vi.mock('../hooks/useUploadSessions', () => ({ activeAppendSessionForMemory: () => null, useUploadSessions: () => ({ data: [] }) }));
 vi.mock('../i18n/useTranslation', () => ({ useTranslation: () => ({ language: 'en', t: (key: string) => key }) }));
 vi.mock('../lib/api', () => ({ deleteMemoryAsset: vi.fn(), updateAssetVisibility: vi.fn() }));
