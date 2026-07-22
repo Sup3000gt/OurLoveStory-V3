@@ -174,4 +174,13 @@ describe('translate', () => {
       ),
     ).toContain('\n');
   });
+
+  it('translates optimized image controls in both languages', () => {
+    expect(translate('en', 'image.unavailable')).toBe('This image is unavailable.');
+    expect(translate('en', 'image.retry')).toBe('Retry');
+    expect(translate('en', 'image.close')).toBe('Close image');
+    expect(translate('en', 'image.previous')).toBe('Previous image');
+    expect(translate('en', 'image.next')).toBe('Next image');
+    expect(translate('zh', 'image.retry')).toBe('重试');
+  });
 });
