@@ -1,5 +1,74 @@
 /* Per-asset visibility controls and language switch */
 
+.derivative-image {
+  position: relative;
+  min-width: 0;
+}
+
+.derivative-image > img {
+  display: block;
+  width: 100%;
+}
+
+.derivative-image-error {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px 12px;
+  color: #8c3e35;
+  background: #fff0ed;
+}
+
+.derivative-image-error button,
+.derivative-image-error a {
+  padding: 5px 9px;
+  border: 1px solid rgba(165, 70, 62, .24);
+  border-radius: 999px;
+  color: #824f40;
+  background: #fffdfa;
+  font: inherit;
+  font-size: 12px;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.image-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  gap: 16px;
+  padding: 48px;
+  background: rgba(37, 29, 26, .9);
+}
+
+.image-lightbox-image {
+  max-width: min(90vw, 1200px);
+  max-height: 80vh;
+  object-fit: contain;
+}
+
+.image-lightbox-close,
+.image-lightbox-previous,
+.image-lightbox-next {
+  position: absolute;
+  border: 0;
+  color: white;
+  background: transparent;
+  font-size: 36px;
+  cursor: pointer;
+}
+
+.image-lightbox-close { top: 14px; right: 20px; }
+.image-lightbox-previous { top: 50%; left: 20px; }
+.image-lightbox-next { top: 50%; right: 20px; }
+
+.image-lightbox > a {
+  color: white;
+}
+
 .language-switch {
   display: inline-flex;
   align-items: center;
