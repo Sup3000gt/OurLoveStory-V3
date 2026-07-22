@@ -75,6 +75,25 @@ describe('listMemories pagination', () => {
     expect(guestPage.memories.map((memory) => memory.id)).not.toContain('memory-private');
     expect(ownerPage.memories.map((memory) => memory.id)).toContain('memory-private');
   });
+
+  it('paginates only the requested category', async () => {
+    await insertMemory('memory-food-1', '2026-06-29', 'food-1', 'public', 'Homemade Food');
+    await insertMemory('memory-food-2', '2026-06-28', 'food-2', 'public', 'Homemade Food');
+
+    const firstPage = await listMemories(env, false, {
+      category: 'Homemade Food',
+      limit: 1,
+    });
+    const secondPage = await listMemories(env, false, {
+      category: 'Homemade Food',
+      limit: 1,
+      cursor: firstPage.nextCursor,
+    });
+
+    expect(firstPage.memories.map((memory) => memory.id)).toEqual(['memory-food-1']);
+    expect(secondPage.memories.map((memory) => memory.id)).toEqual(['memory-food-2']);
+    expect(secondPage.nextCursor).toBeNull();
+  });
 });
 
 async function insertMemory(
@@ -82,13 +101,14 @@ async function insertMemory(
   takenAt: string,
   assetId: string,
   assetVisibility: 'public' | 'private',
+  category: 'Travel' | 'Daily Life' | 'Homemade Food' | 'Dining Out' | 'Special Moments' = 'Travel',
 ): Promise<void> {
   await db.prepare(`
     INSERT INTO memories (
       id, title, description, location, taken_at, category, visibility,
       is_featured, status, cover_asset_id, created_by
-    ) VALUES (?, ?, '', '', ?, 'Travel',  'private', 0, 'published', ?, 'owner-1')
-  `).bind(id, id, takenAt, assetId).run();
+    ) VALUES (?, ?, '', '', ?, ?,  'private', 0, 'published', ?, 'owner-1')
+  `).bind(id, id, takenAt, category, assetId).run();
   await db.prepare(`
     INSERT INTO media_assets (
       id, memory_id, media_type, object_key, original_filename,

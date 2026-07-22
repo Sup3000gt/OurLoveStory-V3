@@ -46,6 +46,9 @@ Supports cursor pagination:
 - `limit` is optional, defaults to `12`, and is capped at `24`.
 - `cursor` is an opaque cursor returned by the previous response.
 - The next request should pass the returned `nextCursor` as `cursor`.
+- `category` is optional and accepts one supported memory category. Pagination is scoped to that category.
+
+Public memories are viewable by anyone on the internet without signing in. Public image thumbnails and previews are available to guests; original image downloads remain owner-only.
 
 ```json
 {
@@ -65,12 +68,14 @@ Supports cursor pagination:
         {
           "id": "asset-uuid",
           "type": "image",
-          "url": "/api/assets/asset-uuid",
-          "downloadUrl": "/api/assets/asset-uuid/download",
+          "thumbnailUrl": "/api/assets/asset-uuid/thumbnail",
+          "previewUrl": "/api/assets/asset-uuid/preview",
+          "originalUrl": null,
           "filename": "IMG_1234.jpg",
           "mimeType": "image/jpeg",
           "sizeBytes": 123456,
-          "sortOrder": 0
+          "sortOrder": 0,
+          "visibility": "public"
         }
       ],
       "createdAt": "2026-07-20 12:00:00",

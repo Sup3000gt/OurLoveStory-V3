@@ -35,6 +35,7 @@ export type GetToken =
 export interface MemoryPageOptions {
   cursor?: string | null;
   limit?: number;
+  category?: Memory['category'] | null;
 }
 
 export class ApiRequestError extends Error {
@@ -101,6 +102,7 @@ export async function getMemories(
     limit: String(options.limit ?? 12),
   });
   if (options.cursor) params.set('cursor', options.cursor);
+  if (options.category) params.set('category', options.category);
 
   return await apiRequest<MemoryPage>(
     `/memories?${params.toString()}`,

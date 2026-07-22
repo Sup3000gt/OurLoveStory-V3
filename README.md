@@ -209,18 +209,18 @@ Add `VITE_CLERK_PUBLISHABLE_KEY` as a build environment variable, and add the fo
 - Up to 20 files per memory
 - Images: JPEG, PNG, WebP, or GIF, up to 50 MiB each
 - Videos: MP4, MOV, or WebM, up to 2 GiB each
-- Public memories are visible and downloadable by everyone
+- Public memories are visible to anyone on the internet without signing in. Public image thumbnails and previews are available to guests; original image downloads remain owner-only.
 - Private memories and drafts are only returned to allowlisted owners
 - Unauthorized private media requests return `404`
 - Original filenames are sanitized before download headers are generated
-- Public originals can include EXIF/GPS metadata; remove sensitive metadata before publishing
+- Owner original downloads may include EXIF/GPS metadata. Public visitors receive optimized preview derivatives rather than original image files.
 
 MOV and WebM playback depends on browser codec support. The original file is still downloadable. Cloudflare Stream transcoding is intentionally deferred until the family video library justifies it.
 
 # Current limitations and next improvements
 
 - HEIC files are not accepted yet because browsers cannot display them consistently without conversion
-- No image resizing pipeline yet; originals are streamed for display and download
+- Image thumbnails and previews are generated as optimized WebP derivatives; owner originals remain available for download.
 - No edit/delete UI yet, although authenticated Worker endpoints already support metadata updates and deletion
 - No resumable multipart upload yet; very large videos should be added after a dedicated multipart workflow
 - Orphaned objects from an interrupted client flow should later be removed by a scheduled cleanup job

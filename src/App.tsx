@@ -4,6 +4,7 @@ import {
   Routes,
 } from 'react-router-dom';
 import { useState } from 'react';
+import type { Memory } from '../shared/contracts';
 import {
   Header,
 } from './components/Header';
@@ -45,15 +46,25 @@ export default function App() {
   const memoryQuery =
     useMemories();
 
+  const [galleryCategory, setGalleryCategory] =
+    useState<'All' | Memory['category']>('All');
+  const galleryQuery =
+    useMemories(
+      galleryCategory === 'All'
+        ? undefined
+        : galleryCategory,
+    );
+
   const [galleryPageIndex, setGalleryPageIndex] = useState(0);
   const memoryPages = memoryQuery.data?.pages;
+  const galleryMemoryPages = galleryQuery.data?.pages;
   const memories =
     memoryPages?.flatMap((page) => page.memories)
     ?? [];
   const galleryPage = getGalleryPageState(
-    memoryPages,
+    galleryMemoryPages,
     galleryPageIndex,
-    Boolean(memoryQuery.hasNextPage),
+    Boolean(galleryQuery.hasNextPage),
   );
 
   const goToPreviousGalleryPage = () => {
@@ -66,9 +77,9 @@ export default function App() {
       return;
     }
 
-    if (!memoryQuery.hasNextPage || memoryQuery.isFetchingNextPage) return;
+    if (!galleryQuery.hasNextPage || galleryQuery.isFetchingNextPage) return;
 
-    void memoryQuery.fetchNextPage().then((result) => {
+    void galleryQuery.fetchNextPage().then((result) => {
       const pages = result.data?.pages;
       if (pages?.length) setGalleryPageIndex(pages.length - 1);
     });
@@ -117,19 +128,24 @@ export default function App() {
                   galleryPage.memories
                 }
                 isLoading={
-                  memoryQuery.isLoading
+                  galleryQuery.isLoading
                 }
                 error={
-                  memoryQuery.error
+                  galleryQuery.error
                 }
                 isOwner={isOwner}
+                category={galleryCategory}
                 currentPage={galleryPage.currentPage}
                 totalPages={galleryPage.totalPages}
                 hasPreviousPage={galleryPage.hasPreviousPage}
                 hasNextPage={galleryPage.hasNextPage}
-                isFetchingPage={memoryQuery.isFetchingNextPage}
+                isFetchingPage={galleryQuery.isFetchingNextPage}
                 onPreviousPage={goToPreviousGalleryPage}
                 onNextPage={goToNextGalleryPage}
+                onCategoryChange={(category) => {
+                  setGalleryPageIndex(0);
+                  setGalleryCategory(category);
+                }}
               />
             }
           />

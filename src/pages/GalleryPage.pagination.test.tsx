@@ -18,6 +18,7 @@ describe('GalleryPage pagination', () => {
   it('shows page navigation instead of appending a Load more list', () => {
     const previousPage = vi.fn();
     const nextPage = vi.fn();
+    const categoryChange = vi.fn();
     container = document.createElement('div');
     document.body.append(container);
     root = createRoot(container);
@@ -29,6 +30,7 @@ describe('GalleryPage pagination', () => {
           isLoading={false}
           error={null}
           isOwner={false}
+          category="All"
           currentPage={1}
           totalPages={2}
           hasPreviousPage={false}
@@ -36,6 +38,7 @@ describe('GalleryPage pagination', () => {
           isFetchingPage={false}
           onPreviousPage={previousPage}
           onNextPage={nextPage}
+          onCategoryChange={categoryChange}
         />
       </LanguageProvider>,
     ));
@@ -50,5 +53,39 @@ describe('GalleryPage pagination', () => {
     act(() => button?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
     expect(nextPage).toHaveBeenCalledOnce();
     expect(previousPage).not.toHaveBeenCalled();
+  });
+
+  it('asks the parent to load a category from its first page', () => {
+    const categoryChange = vi.fn();
+    container = document.createElement('div');
+    document.body.append(container);
+    root = createRoot(container);
+
+    act(() => root?.render(
+      <LanguageProvider>
+        <GalleryPage
+          memories={[]}
+          isLoading={false}
+          error={null}
+          isOwner={false}
+          category="All"
+          currentPage={2}
+          totalPages={2}
+          hasPreviousPage
+          hasNextPage={false}
+          isFetchingPage={false}
+          onPreviousPage={vi.fn()}
+          onNextPage={vi.fn()}
+          onCategoryChange={categoryChange}
+        />
+      </LanguageProvider>,
+    ));
+
+    const button = Array.from(container.querySelectorAll('button'))
+      .find((item) => item.textContent?.includes('Travel'));
+
+    act(() => button?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+
+    expect(categoryChange).toHaveBeenCalledWith('Travel');
   });
 });

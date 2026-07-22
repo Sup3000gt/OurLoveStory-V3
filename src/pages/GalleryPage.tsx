@@ -1,4 +1,3 @@
-import { useMemo, useState } from 'react';
 import type { Memory } from '../../shared/contracts';
 import { MEMORY_CATEGORIES } from '../../shared/contracts';
 import { GalleryGrid } from '../components/GalleryGrid';
@@ -10,6 +9,7 @@ interface GalleryPageProps {
   isLoading: boolean;
   error: Error | null;
   isOwner: boolean;
+  category: 'All' | Memory['category'];
   currentPage: number;
   totalPages: number;
   hasPreviousPage: boolean;
@@ -17,6 +17,7 @@ interface GalleryPageProps {
   isFetchingPage: boolean;
   onPreviousPage: () => void;
   onNextPage: () => void;
+  onCategoryChange: (category: 'All' | Memory['category']) => void;
 }
 
 export function GalleryPage({
@@ -24,6 +25,7 @@ export function GalleryPage({
   isLoading,
   error,
   isOwner,
+  category,
   currentPage,
   totalPages,
   hasPreviousPage,
@@ -31,14 +33,10 @@ export function GalleryPage({
   isFetchingPage,
   onPreviousPage,
   onNextPage,
+  onCategoryChange,
 }: GalleryPageProps) {
   const { t } = useTranslation();
-  const [category, setCategory] = useState<string>('All');
   const categories = ['All', ...MEMORY_CATEGORIES];
-  const filtered = useMemo(
-    () => (category === 'All' ? memories : memories.filter((memory) => memory.category === category)),
-    [category, memories],
-  );
 
   return (
     <main className="page-shell">
@@ -56,7 +54,11 @@ export function GalleryPage({
             <button
               key={item}
               className={category === item ? 'active' : ''}
-              onClick={() => setCategory(item)}
+              onClick={() => {
+                if (category !== item) {
+                  onCategoryChange(item as 'All' | Memory['category']);
+                }
+              }}
               type="button"
             >
               {label}
@@ -66,11 +68,11 @@ export function GalleryPage({
       </div>
       {isLoading ? <div className="gallery-status">{t('gallery.loading')}</div> : null}
       {error ? <div className="gallery-status error">{t('gallery.loadError')}</div> : null}
-      {!isLoading && !error && filtered.length === 0 ? (
+      {!isLoading && !error && memories.length === 0 ? (
         <div className="gallery-status">{t('gallery.empty')}</div>
       ) : null}
-      {filtered.length > 0 ? (
-        <GalleryGrid memories={filtered} variant="masonry" isOwner={isOwner} />
+      {memories.length > 0 ? (
+        <GalleryGrid memories={memories} variant="masonry" isOwner={isOwner} />
       ) : null}
       {totalPages > 0 && (hasPreviousPage || hasNextPage) ? (
         <nav className="gallery-pagination" aria-label={t('gallery.paginationLabel')}>
