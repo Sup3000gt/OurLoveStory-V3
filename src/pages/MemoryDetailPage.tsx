@@ -29,6 +29,8 @@ import type {
   MemoryAsset,
   Visibility,
 } from '../../shared/contracts';
+import { DerivativeImage } from '../components/DerivativeImage';
+import { ImageLightbox } from '../components/ImageLightbox';
 import {
   activeAppendSessionForMemory,
   useUploadSessions,
@@ -48,6 +50,8 @@ import {
 } from '../lib/format';
 import {
   applyAssetDeletion,
+  adjacentImageAssetId,
+  imageAssetsForLightbox,
 } from '../lib/memory-assets';
 import {
   replaceAssetVisibility,
@@ -117,6 +121,11 @@ export function MemoryDetailPage({
     setDeleteError,
   ] = useState('');
 
+  const [
+    selectedImageId,
+    setSelectedImageId,
+  ] = useState<string | null>(null);
+
   const successTimer =
     useRef<
       number | null
@@ -125,9 +134,12 @@ export function MemoryDetailPage({
   const memory =
     memories.find(
       (candidate) =>
-        candidate.id
+      candidate.id
         === memoryId,
     );
+
+  const imageAssets = memory ? imageAssetsForLightbox(memory) : [];
+  const selectedImage = imageAssets.find((asset) => asset.id === selectedImageId) ?? null;
 
   const activeAppend =
     memory
@@ -533,14 +545,14 @@ export function MemoryDetailPage({
                       preload="metadata"
                     />
                   ) : (
-                    <img
-                      src={
-                        asset.url
-                      }
-                      alt={
-                        `${memory.title} — ${asset.filename}`
-                      }
+                    <DerivativeImage
+                      src={asset.thumbnailUrl}
+                      alt={`${memory.title} — ${asset.filename}`}
+                      originalUrl={isOwner ? asset.originalUrl : null}
+                      originalFilename={asset.filename}
+                      downloadLabel={t('memory.downloadOriginal')}
                       loading="lazy"
+                      onClick={() => setSelectedImageId(asset.id)}
                     />
                   )}
               </div>
@@ -657,28 +669,40 @@ export function MemoryDetailPage({
                     </>
                   ) : null}
 
-                  <a
-                    className="secondary-button"
-                    href={
-                      asset.downloadUrl
-                    }
-                    download={
-                      asset.filename
-                    }
-                  >
-                    <Download
-                      size={16}
-                    />
-                    {t(
-                      'memory.downloadOriginal',
-                    )}
-                  </a>
+                  {asset.type === 'video' || (isOwner && asset.originalUrl) ? (
+                    <a
+                      className="secondary-button"
+                      href={asset.type === 'video' ? asset.downloadUrl : asset.originalUrl!}
+                      download={asset.filename}
+                    >
+                      <Download size={16} />
+                      {t('memory.downloadOriginal')}
+                    </a>
+                  ) : null}
                 </div>
               </div>
             </article>
           ),
         )}
       </section>
+      {selectedImage ? (
+        <ImageLightbox
+          asset={isOwner ? selectedImage : { ...selectedImage, originalUrl: null }}
+          onClose={() => setSelectedImageId(null)}
+          onPrevious={() => {
+            const previousId = adjacentImageAssetId(memory, selectedImage.id, -1);
+            if (previousId) setSelectedImageId(previousId);
+          }}
+          onNext={() => {
+            const nextId = adjacentImageAssetId(memory, selectedImage.id, 1);
+            if (nextId) setSelectedImageId(nextId);
+          }}
+          closeLabel={t('image.close')}
+          previousLabel={t('image.previous')}
+          nextLabel={t('image.next')}
+          downloadLabel={t('memory.downloadOriginal')}
+        />
+      ) : null}
     </main>
   );
 }

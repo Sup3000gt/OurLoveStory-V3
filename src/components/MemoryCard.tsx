@@ -1,6 +1,7 @@
 import { CalendarDays, Download, MapPin, Play } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import type { Memory } from '../../shared/contracts';
+import { DerivativeImage } from './DerivativeImage';
 import { useTranslation } from '../i18n/useTranslation';
 import { formatMemoryDate } from '../lib/format';
 import { summarizeAssetVisibility } from '../lib/memory-visibility';
@@ -27,7 +28,14 @@ export function MemoryCard({ memory, isOwner }: MemoryCardProps) {
               <span className="play-badge"><Play size={18} fill="currentColor" /></span>
             </>
           ) : (
-            <img src={cover.url} alt={memory.title} loading="lazy" />
+            <DerivativeImage
+              src={cover.thumbnailUrl}
+              alt={memory.title}
+              originalUrl={cover.originalUrl}
+              originalFilename={cover.filename}
+              downloadLabel={t('memory.downloadOriginal')}
+              loading="lazy"
+            />
           )}
           <div className="memory-badges">
             {memory.status === 'draft' ? <span className="draft-badge">{t('memory.draft')}</span> : null}
@@ -37,15 +45,17 @@ export function MemoryCard({ memory, isOwner }: MemoryCardProps) {
       <div className="memory-body">
         <div className="memory-title-row">
           <Link to={`/memory/${encodeURIComponent(memory.id)}`}><h3>{memory.title}</h3></Link>
-          <a
-            className="icon-button"
-            href={cover.downloadUrl}
-            download={cover.filename}
-            aria-label={`${t('memory.downloadOriginal')}: ${memory.title}`}
-            title={t('memory.downloadOriginal')}
-          >
-            <Download size={17} />
-          </a>
+          {cover.type === 'video' || cover.originalUrl ? (
+            <a
+              className="icon-button"
+              href={cover.type === 'video' ? cover.downloadUrl : cover.originalUrl!}
+              download={cover.filename}
+              aria-label={`${t('memory.downloadOriginal')}: ${memory.title}`}
+              title={t('memory.downloadOriginal')}
+            >
+              <Download size={17} />
+            </a>
+          ) : null}
         </div>
         <div className="metadata">
           <span><MapPin size={14} />{memory.location}</span>

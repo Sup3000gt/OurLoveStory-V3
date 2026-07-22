@@ -1,4 +1,14 @@
-import type { DeleteAssetResponse, Memory } from '../../shared/contracts';
+import type { DeleteAssetResponse, ImageAsset, Memory } from '../../shared/contracts';
+
+export function imageAssetsForLightbox(memory: Memory): ImageAsset[] {
+  return memory.assets.filter((asset): asset is ImageAsset => asset.type === 'image');
+}
+
+export function adjacentImageAssetId(memory: Memory, currentAssetId: string, direction: -1 | 1): string | null {
+  const images = imageAssetsForLightbox(memory);
+  const currentIndex = images.findIndex((asset) => asset.id === currentAssetId);
+  return currentIndex < 0 ? null : images[currentIndex + direction]?.id ?? null;
+}
 
 export function applyAssetDeletion(
   memories: Memory[],
