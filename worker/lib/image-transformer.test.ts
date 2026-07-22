@@ -51,8 +51,44 @@ describe('hybrid persistent image transformer', () => {
 
     await generateAndPersistDerivative(fixture.env, { ...source, sizeBytes: 21 * 1024 * 1024 }, 'preview', 'derivatives/a.webp', { fetchImpl });
 
-    expect(fetchImpl).toHaveBeenCalledWith(expect.any(String), { cf: { image: { format: 'webp', quality: 82, fit: 'scale-down', anim: false } } });
+    expect(fetchImpl).toHaveBeenCalledWith(expect.any(String), {
+      cf: {
+        image: {
+          width: 2048,
+          height: 2048,
+          format: 'webp',
+          quality: 82,
+          fit: 'scale-down',
+          anim: false,
+        },
+      },
+    });
     expect(fixture.input).not.toHaveBeenCalled();
+  });
+
+  it('uses the signed Upload Session source path and complete remote variant options', async () => {
+    const fixture = envFor({ body: stream(new Uint8Array([1])), size: 21 * 1024 * 1024 });
+    const fetchImpl = vi.fn().mockResolvedValue(new Response(new Uint8Array([1, 2]), { status: 200 }));
+    const uploadSource: ImageSourceDescriptor = {
+      kind: 'upload-session',
+      sessionId: 'session-1',
+      sessionFileId: 'file-1',
+      objectKey: 'originals/session-1/file-1.jpg',
+      sizeBytes: 21 * 1024 * 1024,
+    };
+
+    await generateAndPersistDerivative(fixture.env, uploadSource, 'preview', 'derivatives/a.webp', { fetchImpl, nowSeconds: 1_750_000_000 });
+
+    const [url, init] = fetchImpl.mock.calls[0] as [string, { cf: { image: Record<string, unknown> } }];
+    expect(new URL(url).pathname).toBe('/api/internal/image-source/upload-sessions/session-1/files/file-1');
+    expect(init.cf.image).toEqual({
+      width: 2048,
+      height: 2048,
+      format: 'webp',
+      quality: 82,
+      fit: 'scale-down',
+      anim: false,
+    });
   });
 
   it('rejects inputs above 100 MB before reading the R2 body', async () => {

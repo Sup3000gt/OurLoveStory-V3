@@ -5,6 +5,7 @@ import {
   shouldUseBinding,
   type ImageDerivativeVariant,
 } from './image-derivatives';
+import { signedImageSourceUrl } from './image-source-signature';
 
 export type ImageSourceDescriptor =
   | { kind: 'asset'; assetId: string; objectKey: string; sizeBytes: number }
@@ -33,26 +34,17 @@ export interface ImageTransformerOptions {
 }
 
 const inFlight = new Map<string, Promise<GeneratedDerivative>>();
-const encoder = new TextEncoder();
-
-function base64Url(bytes: Uint8Array): string {
-  let binary = '';
-  for (const byte of bytes) binary += String.fromCharCode(byte);
-  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
-}
-
 async function signedSourceUrl(env: Env, source: ImageSourceDescriptor, options: ImageTransformerOptions): Promise<string> {
   const pathname = source.kind === 'asset'
     ? `/api/internal/image-source/assets/${encodeURIComponent(source.assetId)}`
-    : `/api/internal/image-source/upload-sessions/${encodeURIComponent(source.sessionId)}/${encodeURIComponent(source.sessionFileId)}`;
+    : `/api/internal/image-source/upload-sessions/${encodeURIComponent(source.sessionId)}/files/${encodeURIComponent(source.sessionFileId)}`;
   const now = options.nowSeconds ?? Math.floor(Date.now() / 1000);
-  const expires = now + 60;
-  const key = await crypto.subtle.importKey('raw', encoder.encode(env.IMAGE_SOURCE_SIGNING_KEY ?? ''), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
-  const signature = await crypto.subtle.sign('HMAC', key, encoder.encode(`${pathname}\n${expires}`));
-  const url = new URL(pathname, options.sourceOrigin ?? 'https://internal.invalid');
-  url.searchParams.set('expires', String(expires));
-  url.searchParams.set('signature', base64Url(new Uint8Array(signature)));
-  return url.toString();
+  return (await signedImageSourceUrl(
+    options.sourceOrigin ?? 'https://internal.invalid',
+    pathname,
+    env.IMAGE_SOURCE_SIGNING_KEY,
+    now,
+  )).url;
 }
 
 function mapImageError(error: unknown): ImageDerivativeError {
@@ -87,7 +79,16 @@ async function transform(env: Env, source: ImageSourceDescriptor, variant: Image
   }
 
   const response = await (options.fetchImpl ?? fetch)(await signedSourceUrl(env, source, options), {
-    cf: { image: { format: config.format, quality: config.quality, fit: config.fit, anim: config.anim } },
+    cf: {
+      image: {
+        width: config.width,
+        height: config.height,
+        format: config.format,
+        quality: config.quality,
+        fit: config.fit,
+        anim: config.anim,
+      },
+    },
   });
   if (!response.ok) {
     let code: unknown;
