@@ -936,7 +936,7 @@
 }
 
 .gallery-discovery-sidebar .gallery-category-chips button {
-  flex: 0 0 auto;
+  flex: 0 0 100%;
   white-space: nowrap;
   text-align: center;
 }
