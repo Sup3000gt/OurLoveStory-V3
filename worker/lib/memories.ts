@@ -203,6 +203,7 @@ export async function listMemories(
   return {
     memories,
     nextCursor: nextCursor ? encodeMemoryCursor(nextCursor) : null,
+    totalCount: 0,
   };
 }
 
