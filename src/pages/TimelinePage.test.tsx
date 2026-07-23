@@ -124,6 +124,7 @@ describe('TimelinePage', () => {
   afterEach(() => {
     if (root) act(() => root?.unmount());
     container?.remove();
+    window.localStorage.removeItem('our-love-story-language');
     root = undefined;
     container = undefined;
     useTimeline.mockReset();
@@ -176,5 +177,15 @@ describe('TimelinePage', () => {
     expect(image?.getAttribute('src')).toBe('https://images.example/year.jpg');
     expect(image?.getAttribute('loading')).toBe('eager');
     expect(page.querySelector('img[src="https://images.example/may.jpg"]')?.getAttribute('loading')).toBe('lazy');
+  });
+
+  it('localizes photo counts in Chinese', () => {
+    window.localStorage.setItem('our-love-story-language', 'zh');
+    useTimeline.mockReturnValue({ data: timeline, isLoading: false, error: null });
+
+    const page = renderPage();
+
+    expect(page.textContent).toContain('3 张照片');
+    expect(page.textContent).toContain('1 张照片');
   });
 });

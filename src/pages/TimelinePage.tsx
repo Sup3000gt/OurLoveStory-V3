@@ -1,11 +1,15 @@
 import { TimelinePhoto } from '../components/TimelinePhoto';
 import { useTimeline } from '../hooks/useTimeline';
 import { useTranslation } from '../i18n/useTranslation';
-import { formatTimelinePhotoCount, timelineCoverHref } from '../lib/timeline';
+import { timelineCoverHref } from '../lib/timeline';
 
 export function TimelinePage() {
   const { data: timeline, error, isLoading } = useTimeline();
   const { t } = useTranslation();
+  const photoCountLabel = (count: number) => t(
+    count === 1 ? 'timeline.photoCount.one' : 'timeline.photoCount.many',
+    { count },
+  );
 
   return (
     <main className="page-shell timeline-page">
@@ -31,7 +35,7 @@ export function TimelinePage() {
                 <div className="timeline-year-content">
                   <div className="timeline-period-heading">
                     <h2 data-timeline-period-label>{year.label}</h2>
-                    <span>{formatTimelinePhotoCount(year.photoCount)}</span>
+                    <span>{photoCountLabel(year.photoCount)}</span>
                   </div>
                   <article className="timeline-year-card">
                     <a className="timeline-cover-link" href={timelineCoverHref(year.cover)}>
@@ -55,7 +59,7 @@ export function TimelinePage() {
                             />
                             <div className="timeline-month-copy">
                               <h3 data-timeline-period-label>{month.label}</h3>
-                              <span>{formatTimelinePhotoCount(month.photoCount)}</span>
+                              <span>{photoCountLabel(month.photoCount)}</span>
                             </div>
                           </a>
                         </article>
