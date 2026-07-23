@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import { Miniflare } from 'miniflare';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { Env } from '../env';
-import { listTimeline, selectTimelineCover, type TimelinePhotoRow } from './timeline';
+import { listTimeline } from './timeline';
 
 const schema = readFileSync('database/schema.sql', 'utf8');
 
@@ -58,6 +58,30 @@ beforeEach(async () => {
     ],
   });
   await insertMemory({
+    id: 'memory-july-newest-date',
+    title: 'Newest July date',
+    takenAt: '2026-07-31',
+    createdAt: '2026-07-20 09:00:00',
+    assets: [{ id: 'july-newest-date', sortOrder: 0 }],
+  });
+  await insertMemory({
+    id: 'memory-july-newest-created',
+    title: 'Older date, newer creation',
+    takenAt: '2026-07-30',
+    createdAt: '2026-07-31 09:00:00',
+    assets: [{ id: 'july-newest-created', sortOrder: 0 }],
+  });
+  await insertMemory({
+    id: 'memory-july-sort-order',
+    title: 'Newest July fallback',
+    takenAt: '2026-07-31',
+    createdAt: '2026-07-30 09:00:00',
+    assets: [
+      { id: 'july-later-sort-order', sortOrder: 1 },
+      { id: 'july-first-sort-order', sortOrder: 0 },
+    ],
+  });
+  await insertMemory({
     id: 'memory-draft',
     title: 'Draft memory',
     takenAt: '2026-08-15',
@@ -72,7 +96,6 @@ beforeEach(async () => {
   });
 
   await insertCover('cover-year-2026', 'year', '2026', 'memory-july', 'july-old');
-  await insertCover('cover-month-july', 'month', '2026-07', 'memory-july', 'july-new');
   await insertCover('cover-month-august', 'month', '2026-08', 'memory-august', 'august-public');
   await db.prepare("UPDATE media_assets SET visibility = 'private' WHERE id = 'august-public'").run();
 });
@@ -82,14 +105,14 @@ afterEach(async () => {
 });
 
 describe('listTimeline', () => {
-  it('assembles public groups with valid explicit covers and deterministic fallbacks', async () => {
+  it('assembles public groups with valid explicit covers and D1-backed deterministic fallbacks', async () => {
     const timeline = await listTimeline(env);
 
     expect(timeline.years.map((year) => year.key)).toEqual(['2026', '2025']);
     expect(timeline.years[0]?.months.map((month) => month.key)).toEqual(['2026-08', '2026-07']);
     expect(timeline.years[0]).toMatchObject({
       label: '2026',
-      photoCount: 3,
+      photoCount: 7,
       cover: {
         memoryId: 'memory-july',
         assetId: 'july-old',
@@ -113,11 +136,11 @@ describe('listTimeline', () => {
       year: '2026',
       month: 7,
       label: 'July',
-      photoCount: 2,
+      photoCount: 6,
       cover: {
-        memoryId: 'memory-july',
-        assetId: 'july-new',
-        isExplicitCover: true,
+        memoryId: 'memory-july-sort-order',
+        assetId: 'july-first-sort-order',
+        isExplicitCover: false,
       },
     });
     expect(timeline.years[1]).toMatchObject({
@@ -141,39 +164,6 @@ describe('listTimeline', () => {
     ]));
   });
 });
-
-describe('selectTimelineCover', () => {
-  it('uses the newest eligible photo with deterministic tie breakers when no explicit cover is valid', () => {
-    const photos = [
-      photo('asset-z', '2026-07-20', '2026-07-21 09:00:00', 1),
-      photo('asset-a', '2026-07-20', '2026-07-21 09:00:00', 1),
-      photo('older-photo', '2026-07-19', '2026-07-22 09:00:00', 0),
-    ];
-
-    expect(selectTimelineCover(photos, null)).toMatchObject({
-      assetId: 'asset-a',
-      isExplicitCover: false,
-    });
-  });
-});
-
-function photo(
-  assetId: string,
-  takenAt: string,
-  createdAt: string,
-  sortOrder: number,
-): TimelinePhotoRow {
-  return {
-    memoryId: 'memory-1',
-    memoryTitle: 'Memory',
-    memoryDate: takenAt,
-    memoryLocation: 'Somewhere',
-    memoryCreatedAt: createdAt,
-    assetId,
-    filename: `${assetId}.jpg`,
-    sortOrder,
-  };
-}
 
 async function insertMemory(input: {
   id: string;
