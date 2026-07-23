@@ -60,4 +60,33 @@ describe('ShareLinkButton', () => {
     expect(document.activeElement).toBe(input);
     expect(page.querySelector('[aria-live="polite"]')?.textContent).toBe('Copy link manually');
   });
+
+  it('clears manual fallback after a later successful Web Share', async () => {
+    const writeText = vi.fn().mockRejectedValue(new Error('denied'));
+    vi.stubGlobal('navigator', { clipboard: { writeText } });
+    const page = renderButton();
+    const button = page.querySelector<HTMLButtonElement>('button');
+
+    await act(async () => {
+      button?.click();
+    });
+
+    expect(page.querySelector('input[readonly]')).not.toBeNull();
+    expect(page.querySelector('[aria-live="polite"]')?.textContent).toBe('Copy link manually');
+
+    const share = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal('navigator', { share });
+
+    await act(async () => {
+      button?.click();
+    });
+
+    expect(share).toHaveBeenCalledWith({
+      title: 'April memories',
+      text: 'April memories',
+      url: 'https://lucyandalan.com/timeline/2026-04',
+    });
+    expect(page.querySelector('input[readonly]')).toBeNull();
+    expect(page.querySelector('[aria-live="polite"]')?.textContent).toBe('Link copied');
+  });
 });

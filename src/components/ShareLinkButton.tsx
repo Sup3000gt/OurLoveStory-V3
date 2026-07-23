@@ -30,7 +30,7 @@ export function ShareLinkButton({
   async function handleShare() {
     const result = await shareLink({ title, url });
 
-    if (result === 'copied') {
+    if (result === 'shared' || result === 'copied') {
       setShowManualLink(false);
       setFeedback(copiedLabel);
       return;
