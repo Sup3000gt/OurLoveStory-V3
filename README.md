@@ -124,6 +124,18 @@ npx wrangler d1 execute our-love-story --local --file=database/schema.sql
 npx wrangler d1 execute our-love-story --remote --file=database/schema.sql
 ```
 
+For an existing database, apply later numbered migrations once instead of
+re-running the full schema. The timeline cover feature uses:
+
+```bash
+npx wrangler d1 execute our-love-story --local --file=database/migrations/0004_timeline_covers.sql
+npx wrangler d1 execute our-love-story --remote --file=database/migrations/0004_timeline_covers.sql
+```
+
+Only run the remote command during an intentional release. Keep Clerk secret
+keys in Worker Secrets and keep the R2 bucket private; this migration does not
+require changing R2 objects or exposing original media URLs.
+
 ## 3. Add the two owners to D1
 
 In Clerk, copy each user's ID (`user_...`). Make a temporary copy of `database/owners.example.sql`, replace the sample values, and execute it. Do not commit the real copy.
