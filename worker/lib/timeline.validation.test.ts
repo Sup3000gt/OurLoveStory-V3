@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { parseTimelineCoverInput } from './timeline-validation';
+import { parseTimelineCoverInput, ValidationError } from './timeline-validation';
 
 const migration = readFileSync(
   resolve(
@@ -48,7 +48,7 @@ describe('parseTimelineCoverInput', () => {
     ['empty asset id', { periodType: 'year', periodKey: '2026', assetId: '   ' }],
     ['month outside 01-12', { periodType: 'month', periodKey: '2026-13', assetId: 'asset-1' }],
   ])('rejects a %s', (_, input) => {
-    expect(() => parseTimelineCoverInput(input)).toThrow();
+    expect(() => parseTimelineCoverInput(input)).toThrow(ValidationError);
   });
 });
 
