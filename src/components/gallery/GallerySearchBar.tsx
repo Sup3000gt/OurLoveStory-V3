@@ -1,4 +1,5 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { MAX_MEMORY_SEARCH_LENGTH } from '../../../shared/memory-discovery';
 import { useTranslation } from '../../i18n/useTranslation';
 
 interface GallerySearchBarProps {
@@ -7,24 +8,34 @@ interface GallerySearchBarProps {
   onClear: () => void;
 }
 
-const SEARCH_DEBOUNCE_MS = 250;
+const SEARCH_DEBOUNCE_MS = 300;
 
 export function GallerySearchBar({ value, onChange, onClear }: GallerySearchBarProps) {
   const { t } = useTranslation();
   const inputRef = useRef<HTMLInputElement>(null);
   const timeoutRef = useRef<number | undefined>(undefined);
+  const lastCommittedValueRef = useRef(value);
+  const [draftValue, setDraftValue] = useState(value);
+
+  useEffect(() => {
+    if (value === lastCommittedValueRef.current) return;
+    lastCommittedValueRef.current = value;
+    setDraftValue(value);
+  }, [value]);
 
   useEffect(() => () => {
     if (timeoutRef.current !== undefined) window.clearTimeout(timeoutRef.current);
   }, []);
 
   function handleChange(nextValue: string) {
+    setDraftValue(nextValue);
     if (timeoutRef.current !== undefined) window.clearTimeout(timeoutRef.current);
     timeoutRef.current = window.setTimeout(() => onChange(nextValue), SEARCH_DEBOUNCE_MS);
   }
 
   function handleClear() {
     if (timeoutRef.current !== undefined) window.clearTimeout(timeoutRef.current);
+    setDraftValue('');
     onClear();
     inputRef.current?.focus();
   }
@@ -38,12 +49,13 @@ export function GallerySearchBar({ value, onChange, onClear }: GallerySearchBarP
         ref={inputRef}
         id="gallery-search-input"
         type="search"
-        value={value}
+        value={draftValue}
+        maxLength={MAX_MEMORY_SEARCH_LENGTH}
         placeholder={t('gallery.searchPlaceholder')}
         aria-label={t('gallery.searchLabel')}
         onChange={(event) => handleChange(event.target.value)}
       />
-      {value ? (
+      {draftValue ? (
         <button className="gallery-clear-search" type="button" onClick={handleClear}>
           {t('gallery.clear')}
         </button>

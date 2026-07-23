@@ -40,6 +40,17 @@ describe('gallery filters', () => {
     });
   });
 
+  it('falls back to safe defaults for malformed URL filters', () => {
+    expect(parseGallerySearch(
+      `?q=${'x'.repeat(81)}&category=not-a-category&year=20&month=99`,
+    )).toEqual({
+      query: '',
+      category: 'All',
+      year: '',
+      month: null,
+    });
+  });
+
   it('omits default filters from the URL', () => {
     expect(toGallerySearch({
       query: '',

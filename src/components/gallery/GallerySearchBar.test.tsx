@@ -42,9 +42,41 @@ describe('GallerySearchBar', () => {
     });
 
     await act(async () => {
-      await new Promise((resolve) => window.setTimeout(resolve, 300));
+      await new Promise((resolve) => window.setTimeout(resolve, 350));
     });
 
     expect(onChange).toHaveBeenLastCalledWith('韩餐');
+  });
+
+  it('keeps the latest typed value during debounce and limits the query length', () => {
+    const onChange = vi.fn();
+    container = document.createElement('div');
+    document.body.append(container);
+    root = createRoot(container);
+
+    act(() => root?.render(
+      <LanguageProvider>
+        <GallerySearchBar value="" onChange={onChange} onClear={vi.fn()} />
+      </LanguageProvider>,
+    ));
+
+    const input = container.querySelector('input[type="search"]') as HTMLInputElement;
+    act(() => {
+      const setValue = Object.getOwnPropertyDescriptor(
+        HTMLInputElement.prototype,
+        'value',
+      )?.set;
+      setValue?.call(input, '正在输入');
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+
+    act(() => root?.render(
+      <LanguageProvider>
+        <GallerySearchBar value="" onChange={onChange} onClear={vi.fn()} />
+      </LanguageProvider>,
+    ));
+
+    expect(input.value).toBe('正在输入');
+    expect(input.maxLength).toBe(80);
   });
 });

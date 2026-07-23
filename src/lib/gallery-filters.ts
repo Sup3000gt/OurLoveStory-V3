@@ -1,5 +1,8 @@
-import type { Memory } from '../../shared/contracts';
-import { normalizeMemoryDiscoveryFilters } from '../../shared/memory-discovery';
+import { MEMORY_CATEGORIES, type Memory } from '../../shared/contracts';
+import {
+  MAX_MEMORY_SEARCH_LENGTH,
+  normalizeMemoryDiscoveryFilters,
+} from '../../shared/memory-discovery';
 
 export interface GalleryFilterState {
   query: string;
@@ -37,14 +40,37 @@ function toGalleryFilterState(input: {
   };
 }
 
+function sanitizeGallerySearchInput(input: {
+  query: string | null;
+  category: string | null;
+  year: string | null;
+  month: string | null;
+}) {
+  const query = input.query?.trim().replace(/\s+/g, ' ') ?? null;
+  const safeQuery = query && query.length <= MAX_MEMORY_SEARCH_LENGTH ? query : null;
+  const category = input.category === 'All'
+    || (input.category !== null && MEMORY_CATEGORIES.includes(input.category as Memory['category']))
+    ? input.category
+    : null;
+  const year = input.year && /^\d{4}$/.test(input.year.trim())
+    ? input.year.trim()
+    : null;
+  const month = year && input.month && /^\d{1,2}$/.test(input.month.trim())
+    && Number(input.month) >= 1 && Number(input.month) <= 12
+    ? input.month.trim()
+    : null;
+
+  return { query: safeQuery, category, year, month };
+}
+
 export function parseGallerySearch(search: string): GalleryFilterState {
   const params = new URLSearchParams(search);
-  return toGalleryFilterState({
+  return toGalleryFilterState(sanitizeGallerySearchInput({
     query: params.get('q'),
     category: params.get('category'),
     year: params.get('year'),
     month: params.get('month'),
-  });
+  }));
 }
 
 export function normalizeGalleryFilterState(
