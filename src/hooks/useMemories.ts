@@ -32,5 +32,6 @@ export function useMemories(options: MemoryPageOptions = {}) {
     enabled: isLoaded,
     staleTime: 30_000,
     retry: 1,
+    placeholderData: (previousData) => previousData,
   });
 }

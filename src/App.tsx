@@ -19,6 +19,7 @@ import {
   useOwnerSession,
 } from './hooks/useOwnerSession';
 import { getGalleryPageState } from './lib/gallery-pagination';
+import { scheduleWhenIdle } from './lib/idle';
 import {
   AddPhotosPage,
 } from './pages/AddPhotosPage';
@@ -107,15 +108,17 @@ function AppRoutes() {
   };
 
   const prefetchNextGalleryPage = () => {
-    const connection = navigator as Navigator & { connection?: { saveData?: boolean } };
-    const isLastLoadedPage = galleryPageIndex === galleryPage.totalPages - 1;
-    if (
-      !isLastLoadedPage
-      || !galleryQuery.hasNextPage
-      || galleryQuery.fetchStatus !== 'idle'
-      || connection.connection?.saveData === true
-    ) return;
-    void galleryQuery.fetchNextPage();
+    scheduleWhenIdle(() => {
+      const connection = navigator as Navigator & { connection?: { saveData?: boolean } };
+      const isLastLoadedPage = galleryPageIndex === galleryPage.totalPages - 1;
+      if (
+        !isLastLoadedPage
+        || !galleryQuery.hasNextPage
+        || galleryQuery.fetchStatus !== 'idle'
+        || connection.connection?.saveData === true
+      ) return;
+      void galleryQuery.fetchNextPage();
+    });
   };
 
   const isOwner =
@@ -163,6 +166,7 @@ function AppRoutes() {
                 isLoading={
                   galleryQuery.isLoading
                 }
+                isFetching={galleryQuery.isFetching}
                 error={
                   galleryQuery.error
                 }
@@ -180,6 +184,7 @@ function AppRoutes() {
                 onFiltersChange={updateFilters}
                 onClearFilters={clearFilters}
                 onPrefetchNextPage={prefetchNextGalleryPage}
+                onRetry={() => void galleryQuery.refetch()}
               />
             }
           />

@@ -70,4 +70,16 @@ describe('timeline navigation', () => {
       next: '2026-05',
     });
   });
+
+  it('finds surrounding non-empty archives when the current month is absent', () => {
+    const months = [
+      month('2026-03', '2026', 3, 8),
+      month('2026-05', '2026', 5, 32),
+    ];
+
+    expect(adjacentTimelineMonths(months, '2026-04')).toEqual({
+      previous: '2026-03',
+      next: '2026-05',
+    });
+  });
 });

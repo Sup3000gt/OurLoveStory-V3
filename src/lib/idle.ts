@@ -1,0 +1,9 @@
+export function scheduleWhenIdle(callback: () => void): () => void {
+  if (typeof window.requestIdleCallback === 'function') {
+    const handle = window.requestIdleCallback(() => callback());
+    return () => window.cancelIdleCallback(handle);
+  }
+
+  const handle = window.setTimeout(callback, 0);
+  return () => window.clearTimeout(handle);
+}

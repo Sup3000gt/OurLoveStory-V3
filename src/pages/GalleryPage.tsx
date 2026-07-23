@@ -16,6 +16,7 @@ import {
 interface GalleryPageProps {
   memories: Memory[];
   isLoading: boolean;
+  isFetching?: boolean;
   error: Error | null;
   isOwner: boolean;
   filters: GalleryFilterState;
@@ -28,14 +29,19 @@ interface GalleryPageProps {
   isFetchingPage: boolean;
   onPreviousPage: () => void;
   onNextPage: () => void;
-  onFiltersChange: (next: GalleryFilterState) => void;
+  onFiltersChange: (
+    next: GalleryFilterState,
+    options?: { replace?: boolean },
+  ) => void;
   onClearFilters: () => void;
   onPrefetchNextPage: () => void;
+  onRetry?: () => void;
 }
 
 export function GalleryPage({
   memories,
   isLoading,
+  isFetching = false,
   error,
   isOwner,
   filters,
@@ -51,6 +57,7 @@ export function GalleryPage({
   onFiltersChange,
   onClearFilters,
   onPrefetchNextPage,
+  onRetry = () => undefined,
 }: GalleryPageProps) {
   const { t } = useTranslation();
   const hasActiveFilters = hasActiveGalleryFilters(filters);
@@ -66,8 +73,8 @@ export function GalleryPage({
       <section className="gallery-discovery-panel">
         <GallerySearchBar
           value={filters.query}
-          onChange={(query) => onFiltersChange({ ...filters, query })}
-          onClear={() => onFiltersChange({ ...filters, query: '' })}
+          onChange={(query) => onFiltersChange({ ...filters, query }, { replace: true })}
+          onClear={() => onFiltersChange({ ...filters, query: '' }, { replace: true })}
         />
         <div className="gallery-desktop-filters">
           <GalleryFilters
@@ -90,20 +97,34 @@ export function GalleryPage({
         </div>
       </section>
       <ActiveFilterSummary state={filters} facets={facets} totalCount={totalCount} />
-      {isLoading ? <div className="gallery-status">{t('gallery.loading')}</div> : null}
-      {error ? <div className="gallery-status error">{t('gallery.loadError')}</div> : null}
+      {isLoading && memories.length === 0 ? <div className="gallery-status">{t('gallery.loading')}</div> : null}
+      {error ? (
+        <div className="gallery-status error gallery-error-status">
+          <span>{t('gallery.loadError')}</span>
+          <button className="secondary-button" type="button" onClick={onRetry}>
+            {t('gallery.retry')}
+          </button>
+        </div>
+      ) : null}
       {!isLoading && !error && memories.length === 0 ? (
         <div className="gallery-status">
           {hasActiveFilters ? t('gallery.noResults') : t('gallery.empty')}
         </div>
       ) : null}
       {memories.length > 0 ? (
-        <GalleryGrid
-          memories={memories}
-          variant="masonry"
-          isOwner={isOwner}
-          prioritizeFirstTwo={currentPage === 1}
-        />
+        <div className="gallery-grid-state">
+          <GalleryGrid
+            memories={memories}
+            variant="masonry"
+            isOwner={isOwner}
+            prioritizeFirstTwo={currentPage === 1}
+          />
+          {isFetching && !error ? (
+            <div className="gallery-loading-veil" role="status">
+              {t('gallery.loading')}
+            </div>
+          ) : null}
+        </div>
       ) : null}
       {totalPages > 0 && (hasPreviousPage || hasNextPage) ? (
         <nav className="gallery-pagination" aria-label={t('gallery.paginationLabel')}>

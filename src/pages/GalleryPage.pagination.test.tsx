@@ -1,5 +1,6 @@
 import { act } from 'react';
 import { createRoot } from 'react-dom/client';
+import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { LanguageProvider } from '../i18n/LanguageProvider';
 import { emptyGalleryFilterState } from '../lib/gallery-filters';
@@ -74,7 +75,8 @@ describe('GalleryPage pagination', () => {
 
     act(() => root?.render(
       <LanguageProvider>
-        <GalleryPage
+        <MemoryRouter>
+          <GalleryPage
           memories={[]}
           isLoading={false}
           error={null}
@@ -92,7 +94,8 @@ describe('GalleryPage pagination', () => {
           onFiltersChange={vi.fn()}
           onClearFilters={vi.fn()}
           onPrefetchNextPage={prefetchNextPage}
-        />
+          />
+        </MemoryRouter>
       </LanguageProvider>,
     ));
 
@@ -104,5 +107,128 @@ describe('GalleryPage pagination', () => {
     expect(prefetchNextPage).toHaveBeenCalledOnce();
     expect(nextPage).not.toHaveBeenCalled();
     expect(container.textContent).toContain('Page 1');
+  });
+
+  it('keeps the existing grid visible with a retry action while refreshing', () => {
+    const retry = vi.fn();
+    container = document.createElement('div');
+    document.body.append(container);
+    root = createRoot(container);
+
+    act(() => root?.render(
+      <LanguageProvider>
+        <MemoryRouter>
+          <GalleryPage
+          memories={[{
+            id: 'memory-1',
+            title: 'A memory',
+            location: 'Home',
+            date: '2026-05-01',
+            description: '',
+            category: 'Daily Life',
+            visibility: 'public',
+            featured: false,
+            status: 'published',
+            coverAssetId: 'asset-1',
+            assets: [{
+              id: 'asset-1',
+              type: 'image',
+              thumbnailUrl: '/thumb',
+              previewUrl: '/preview',
+              originalUrl: null,
+              filename: 'memory.jpg',
+              mimeType: 'image/jpeg',
+              sizeBytes: 1,
+              width: 1200,
+              height: 800,
+              sortOrder: 0,
+              visibility: 'public',
+            }],
+            createdAt: '',
+            updatedAt: '',
+          }]}
+          isLoading={false}
+          isFetching
+          error={new Error('network')}
+          isOwner={false}
+          filters={emptyGalleryFilterState}
+          facets={undefined}
+          totalCount={1}
+          currentPage={1}
+          totalPages={1}
+          hasPreviousPage={false}
+          hasNextPage={false}
+          isFetchingPage={false}
+          onPreviousPage={vi.fn()}
+          onNextPage={vi.fn()}
+          onFiltersChange={vi.fn()}
+          onClearFilters={vi.fn()}
+          onPrefetchNextPage={vi.fn()}
+          onRetry={retry}
+          />
+        </MemoryRouter>
+      </LanguageProvider>,
+    ));
+
+    expect(container.querySelector('.memory-card')).not.toBeNull();
+    const retryButton = Array.from(container.querySelectorAll('button'))
+      .find((button) => button.textContent?.includes('Try again'));
+    expect(retryButton).toBeTruthy();
+    act(() => retryButton?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+    expect(retry).toHaveBeenCalledOnce();
+  });
+
+  it('marks debounced search updates as history replacements', async () => {
+    const onFiltersChange = vi.fn();
+    container = document.createElement('div');
+    document.body.append(container);
+    root = createRoot(container);
+
+    act(() => root?.render(
+      <LanguageProvider>
+        <MemoryRouter>
+          <GalleryPage
+          memories={[]}
+          isLoading={false}
+          isFetching={false}
+          error={null}
+          isOwner={false}
+          filters={emptyGalleryFilterState}
+          facets={undefined}
+          totalCount={0}
+          currentPage={1}
+          totalPages={0}
+          hasPreviousPage={false}
+          hasNextPage={false}
+          isFetchingPage={false}
+          onPreviousPage={vi.fn()}
+          onNextPage={vi.fn()}
+          onFiltersChange={onFiltersChange}
+          onClearFilters={vi.fn()}
+          onPrefetchNextPage={vi.fn()}
+          onRetry={vi.fn()}
+          />
+        </MemoryRouter>
+      </LanguageProvider>,
+    ));
+
+    const input = container.querySelector('input[type="search"]') as HTMLInputElement;
+    act(() => {
+      const setValue = Object.getOwnPropertyDescriptor(
+        HTMLInputElement.prototype,
+        'value',
+      )?.set;
+      setValue?.call(input, '韩餐');
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+
+    await act(async () => {
+      await new Promise((resolve) => window.setTimeout(resolve, 350));
+    });
+
+    expect(onFiltersChange).toHaveBeenLastCalledWith(
+      { ...emptyGalleryFilterState, query: '韩餐' },
+      { replace: true },
+    );
   });
 });
