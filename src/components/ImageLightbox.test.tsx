@@ -1,5 +1,7 @@
 import { act } from 'react';
 import { createRoot } from 'react-dom/client';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { ImageAsset } from '../../shared/contracts';
 import { ImageLightbox } from './ImageLightbox';
@@ -59,5 +61,24 @@ describe('ImageLightbox', () => {
     await act(async () => { await preload; });
     expect(container.querySelector('img')?.getAttribute('src')).toBe(asset.previewUrl);
     vi.stubGlobal('Image', OriginalImage);
+  });
+
+  it('keeps the close control above the sticky site header', () => {
+    const lightboxStyles = readFileSync(
+      resolve(process.cwd(), 'src/styles/feature-upgrades.css'),
+      'utf8',
+    );
+    const globalStyles = readFileSync(
+      resolve(process.cwd(), 'src/styles/global.css'),
+      'utf8',
+    );
+    const lightboxZIndex = Number(
+      lightboxStyles.match(/\.image-lightbox\s*\{[\s\S]*?z-index:\s*(\d+)/)?.[1],
+    );
+    const headerZIndex = Number(
+      globalStyles.match(/\.site-header\s*\{[\s\S]*?z-index:\s*(\d+)/)?.[1],
+    );
+
+    expect(lightboxZIndex).toBeGreaterThan(headerZIndex);
   });
 });
