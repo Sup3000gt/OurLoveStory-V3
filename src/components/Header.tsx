@@ -39,7 +39,7 @@ export function Header({ isOwner, ownerName }: HeaderProps) {
       <nav className={open ? 'nav open' : 'nav'}>
         <NavLink to="/" onClick={closeMenu}>{t('nav.home')}</NavLink>
         <NavLink to="/gallery" onClick={closeMenu}>{t('nav.gallery')}</NavLink>
-        <a href="/#journal" onClick={closeMenu}>{t('nav.journal')}</a>
+        <a href="/timeline" onClick={closeMenu}>{t('nav.journal')}</a>
         <a href="/#about" onClick={closeMenu}>{t('nav.about')}</a>
         {isOwner ? (
           <Link className="studio-link" to="/studio" onClick={closeMenu}>

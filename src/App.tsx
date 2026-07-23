@@ -34,6 +34,9 @@ import {
   StudioPage,
 } from './pages/StudioPage';
 import {
+  TimelinePage,
+} from './pages/TimelinePage';
+import {
   UploadSessionReviewPage,
 } from './pages/UploadSessionReviewPage';
 import './styles/global.css';
@@ -148,6 +151,11 @@ export default function App() {
                 }}
               />
             }
+          />
+
+          <Route
+            path="/timeline"
+            element={<TimelinePage />}
           />
 
           <Route
