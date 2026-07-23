@@ -24,6 +24,7 @@ import type {
   UploadSessionSummary,
   Visibility,
 } from '../../shared/contracts';
+import type { MemoryFacets } from '../../shared/memory-discovery';
 import {
   requireOwnerSessionToken,
 } from './owner-session';
@@ -38,8 +39,10 @@ export type GetToken =
 export interface MemoryPageOptions {
   cursor?: string | null;
   limit?: number;
+  query?: string | null;
   category?: Memory['category'] | null;
-  month?: string | null;
+  year?: string | null;
+  month?: number | null;
 }
 
 export class ApiRequestError extends Error {
@@ -105,9 +108,11 @@ export async function getMemories(
   const params = new URLSearchParams({
     limit: String(options.limit ?? 12),
   });
-  if (options.cursor) params.set('cursor', options.cursor);
+  if (options.query) params.set('q', options.query);
   if (options.category) params.set('category', options.category);
-  if (options.month) params.set('month', options.month);
+  if (options.year) params.set('year', options.year);
+  if (typeof options.month === 'number') params.set('month', String(options.month));
+  if (options.cursor) params.set('cursor', options.cursor);
 
   return await apiRequest<MemoryPage>(
     `/memories?${params.toString()}`,
@@ -123,6 +128,12 @@ export async function getMemory(
     `/memories/${encodeURIComponent(memoryId)}`,
     getToken,
   );
+}
+
+export async function getMemoryFacets(
+  getToken?: GetToken,
+): Promise<MemoryFacets> {
+  return apiRequest<MemoryFacets>('/memories/facets', getToken);
 }
 
 export async function getTimeline(): Promise<TimelineResponse> {

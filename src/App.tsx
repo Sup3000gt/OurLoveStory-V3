@@ -3,8 +3,7 @@ import {
   Route,
   Routes,
 } from 'react-router-dom';
-import { useState } from 'react';
-import type { Memory } from '../shared/contracts';
+import { useEffect, useState, type ComponentProps, type ComponentType } from 'react';
 import {
   Header,
 } from './components/Header';
@@ -14,6 +13,7 @@ import {
 import {
   useMemories,
 } from './hooks/useMemories';
+import { useGalleryFilters } from './hooks/useGalleryFilters';
 import {
   useOwnerSession,
 } from './hooks/useOwnerSession';
@@ -46,20 +46,32 @@ import './styles/global.css';
 import './styles/feature-upgrades.css';
 
 export default function App() {
+  return (
+    <BrowserRouter>
+      <AppRoutes />
+    </BrowserRouter>
+  );
+}
+
+const GalleryPageWithTotalCount = GalleryPage as ComponentType<
+  ComponentProps<typeof GalleryPage> & { totalCount: number }
+>;
+
+function AppRoutes() {
   const ownerSession =
     useOwnerSession();
 
   const memoryQuery =
     useMemories();
 
-  const [galleryCategory, setGalleryCategory] =
-    useState<'All' | Memory['category']>('All');
+  const { filters, updateFilters, clearFilters } = useGalleryFilters();
   const galleryQuery =
-    useMemories(
-      galleryCategory === 'All'
-        ? undefined
-        : galleryCategory,
-    );
+    useMemories({
+      query: filters.query || null,
+      category: filters.category === 'All' ? null : filters.category,
+      year: filters.year || null,
+      month: filters.month,
+    });
 
   const [galleryPageIndex, setGalleryPageIndex] = useState(0);
   const memoryPages = memoryQuery.data?.pages;
@@ -72,6 +84,11 @@ export default function App() {
     galleryPageIndex,
     Boolean(galleryQuery.hasNextPage),
   );
+
+  const galleryFilterIdentity = JSON.stringify(filters);
+  useEffect(() => {
+    setGalleryPageIndex(0);
+  }, [galleryFilterIdentity]);
 
   const goToPreviousGalleryPage = () => {
     setGalleryPageIndex((pageIndex) => Math.max(pageIndex - 1, 0));
@@ -96,7 +113,7 @@ export default function App() {
     ?? false;
 
   return (
-    <BrowserRouter>
+    <>
       <Header
         isOwner={isOwner}
         ownerName={
@@ -129,7 +146,7 @@ export default function App() {
           <Route
             path="/gallery"
             element={
-              <GalleryPage
+              <GalleryPageWithTotalCount
                 memories={
                   galleryPage.memories
                 }
@@ -140,7 +157,8 @@ export default function App() {
                   galleryQuery.error
                 }
                 isOwner={isOwner}
-                category={galleryCategory}
+                category={filters.category}
+                totalCount={galleryMemoryPages?.[galleryPage.currentPage - 1]?.totalCount ?? 0}
                 currentPage={galleryPage.currentPage}
                 totalPages={galleryPage.totalPages}
                 hasPreviousPage={galleryPage.hasPreviousPage}
@@ -149,8 +167,7 @@ export default function App() {
                 onPreviousPage={goToPreviousGalleryPage}
                 onNextPage={goToNextGalleryPage}
                 onCategoryChange={(category) => {
-                  setGalleryPageIndex(0);
-                  setGalleryCategory(category);
+                  updateFilters({ ...filters, category });
                 }}
               />
             }
@@ -222,6 +239,6 @@ export default function App() {
           />
         </Routes>
       </PhotoSessionUploadProvider>
-    </BrowserRouter>
+    </>
   );
 }

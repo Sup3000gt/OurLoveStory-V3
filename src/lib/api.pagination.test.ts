@@ -52,7 +52,7 @@ describe('getMemories pagination', () => {
     );
   });
 
-  it('passes a month filter to the memory page endpoint', async () => {
+  it('passes query and date filters to the memory endpoint', async () => {
     const page = {
       memories: [],
       nextCursor: null,
@@ -66,11 +66,16 @@ describe('getMemories pagination', () => {
     vi.stubGlobal('fetch', fetchMock);
 
     await expect(
-      getMemories(undefined, { month: '2026-04', limit: 12 }),
+      getMemories(undefined, {
+        query: '韩餐',
+        year: '2026',
+        month: 5,
+        limit: 12,
+      }),
     ).resolves.toEqual(page);
 
     expect(fetchMock).toHaveBeenCalledWith(
-      '/api/memories?limit=12&month=2026-04',
+      '/api/memories?limit=12&q=%E9%9F%A9%E9%A4%90&year=2026&month=5',
       expect.objectContaining({ credentials: 'same-origin' }),
     );
   });
