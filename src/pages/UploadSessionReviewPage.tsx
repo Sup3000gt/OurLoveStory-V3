@@ -135,6 +135,7 @@ export function UploadSessionReviewPage({
   } = useParams();
 
   const {
+    userId,
     getToken,
   } = useAuth();
 
@@ -345,6 +346,7 @@ export function UploadSessionReviewPage({
     queryClient.setQueryData(
       uploadSessionQueryKey(
         sessionId,
+        userId,
       ),
       refreshed,
     );
@@ -401,6 +403,7 @@ export function UploadSessionReviewPage({
       queryClient.setQueryData(
         uploadSessionQueryKey(
           sessionId,
+          userId,
         ),
         refreshed,
       );
@@ -451,6 +454,7 @@ export function UploadSessionReviewPage({
       queryClient.setQueryData(
         uploadSessionQueryKey(
           sessionId,
+          userId,
         ),
         refreshed,
       );

@@ -6,11 +6,15 @@ import {
 
 export function uploadSessionQueryKey(
   sessionId: string,
+  userId?: string | null,
 ) {
-  return [
+  const key = [
     'upload-session',
     sessionId,
   ] as const;
+  return userId === undefined
+    ? key
+    : [...key, userId] as const;
 }
 
 export function useUploadSession(
@@ -20,10 +24,7 @@ export function useUploadSession(
   const { userId, getToken } = useAuth();
 
   return useQuery({
-    queryKey: [
-      ...uploadSessionQueryKey(sessionId ?? ''),
-      userId,
-    ],
+    queryKey: uploadSessionQueryKey(sessionId ?? '', userId),
     queryFn: () =>
       getUploadSession(
         sessionId!,

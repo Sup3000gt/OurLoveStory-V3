@@ -12,4 +12,14 @@ describe('uploadSessionQueryKey', () => {
       'session-a',
     ]);
   });
+
+  it('includes the Clerk user identity for cache writes', () => {
+    expect(
+      uploadSessionQueryKey('session-a', 'user-a'),
+    ).toEqual([
+      'upload-session',
+      'session-a',
+      'user-a',
+    ]);
+  });
 });
