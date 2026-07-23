@@ -3,7 +3,7 @@ import {
   Route,
   Routes,
 } from 'react-router-dom';
-import { useEffect, useState, type ComponentProps, type ComponentType } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Header,
 } from './components/Header';
@@ -14,6 +14,7 @@ import {
   useMemories,
 } from './hooks/useMemories';
 import { useGalleryFilters } from './hooks/useGalleryFilters';
+import { useMemoryFacets } from './hooks/useMemoryFacets';
 import {
   useOwnerSession,
 } from './hooks/useOwnerSession';
@@ -53,10 +54,6 @@ export default function App() {
   );
 }
 
-const GalleryPageWithTotalCount = GalleryPage as ComponentType<
-  ComponentProps<typeof GalleryPage> & { totalCount: number }
->;
-
 function AppRoutes() {
   const ownerSession =
     useOwnerSession();
@@ -65,6 +62,7 @@ function AppRoutes() {
     useMemories();
 
   const { filters, updateFilters, clearFilters } = useGalleryFilters();
+  const facetsQuery = useMemoryFacets();
   const galleryQuery =
     useMemories({
       query: filters.query || null,
@@ -108,6 +106,11 @@ function AppRoutes() {
     });
   };
 
+  const prefetchNextGalleryPage = () => {
+    if (!galleryQuery.hasNextPage || galleryQuery.isFetchingNextPage) return;
+    void galleryQuery.fetchNextPage();
+  };
+
   const isOwner =
     ownerSession.data?.isOwner
     ?? false;
@@ -146,7 +149,7 @@ function AppRoutes() {
           <Route
             path="/gallery"
             element={
-              <GalleryPageWithTotalCount
+              <GalleryPage
                 memories={
                   galleryPage.memories
                 }
@@ -157,7 +160,8 @@ function AppRoutes() {
                   galleryQuery.error
                 }
                 isOwner={isOwner}
-                category={filters.category}
+                filters={filters}
+                facets={facetsQuery.data}
                 totalCount={galleryMemoryPages?.[galleryPage.currentPage - 1]?.totalCount ?? 0}
                 currentPage={galleryPage.currentPage}
                 totalPages={galleryPage.totalPages}
@@ -166,9 +170,9 @@ function AppRoutes() {
                 isFetchingPage={galleryQuery.isFetchingNextPage}
                 onPreviousPage={goToPreviousGalleryPage}
                 onNextPage={goToNextGalleryPage}
-                onCategoryChange={(category) => {
-                  updateFilters({ ...filters, category });
-                }}
+                onFiltersChange={updateFilters}
+                onClearFilters={clearFilters}
+                onPrefetchNextPage={prefetchNextGalleryPage}
               />
             }
           />

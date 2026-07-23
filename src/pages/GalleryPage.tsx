@@ -1,15 +1,21 @@
 import type { Memory } from '../../shared/contracts';
-import { MEMORY_CATEGORIES } from '../../shared/contracts';
+import type { MemoryFacets } from '../../shared/memory-discovery';
 import { GalleryGrid } from '../components/GalleryGrid';
-import { categoryTranslationKeys } from '../i18n/translations';
+import { ActiveFilterSummary } from '../components/gallery/ActiveFilterSummary';
+import { GalleryFilters } from '../components/gallery/GalleryFilters';
+import { GallerySearchBar } from '../components/gallery/GallerySearchBar';
+import { MobileFilterSheet } from '../components/gallery/MobileFilterSheet';
 import { useTranslation } from '../i18n/useTranslation';
+import { hasActiveGalleryFilters, type GalleryFilterState } from '../lib/gallery-filters';
 
 interface GalleryPageProps {
   memories: Memory[];
   isLoading: boolean;
   error: Error | null;
   isOwner: boolean;
-  category: 'All' | Memory['category'];
+  filters: GalleryFilterState;
+  facets: MemoryFacets | undefined;
+  totalCount: number;
   currentPage: number;
   totalPages: number;
   hasPreviousPage: boolean;
@@ -17,7 +23,9 @@ interface GalleryPageProps {
   isFetchingPage: boolean;
   onPreviousPage: () => void;
   onNextPage: () => void;
-  onCategoryChange: (category: 'All' | Memory['category']) => void;
+  onFiltersChange: (next: GalleryFilterState) => void;
+  onClearFilters: () => void;
+  onPrefetchNextPage: () => void;
 }
 
 export function GalleryPage({
@@ -25,7 +33,9 @@ export function GalleryPage({
   isLoading,
   error,
   isOwner,
-  category,
+  filters,
+  facets,
+  totalCount,
   currentPage,
   totalPages,
   hasPreviousPage,
@@ -33,10 +43,12 @@ export function GalleryPage({
   isFetchingPage,
   onPreviousPage,
   onNextPage,
-  onCategoryChange,
+  onFiltersChange,
+  onClearFilters,
+  onPrefetchNextPage,
 }: GalleryPageProps) {
   const { t } = useTranslation();
-  const categories = ['All', ...MEMORY_CATEGORIES];
+  const hasActiveFilters = hasActiveGalleryFilters(filters);
 
   return (
     <main className="page-shell">
@@ -45,31 +57,29 @@ export function GalleryPage({
         <h1>{t('gallery.title')}</h1>
         <span>{t('gallery.subtitle')}</span>
       </header>
-      <div className="filter-row" role="group" aria-label={t('gallery.filterLabel')}>
-        {categories.map((item) => {
-          const label = item === 'All'
-            ? t('gallery.all')
-            : t(categoryTranslationKeys[item as keyof typeof categoryTranslationKeys]);
-          return (
-            <button
-              key={item}
-              className={category === item ? 'active' : ''}
-              onClick={() => {
-                if (category !== item) {
-                  onCategoryChange(item as 'All' | Memory['category']);
-                }
-              }}
-              type="button"
-            >
-              {label}
-            </button>
-          );
-        })}
-      </div>
+      <section className="gallery-discovery-panel">
+        <GallerySearchBar
+          value={filters.query}
+          onChange={(query) => onFiltersChange({ ...filters, query })}
+          onClear={() => onFiltersChange({ ...filters, query: '' })}
+        />
+        <div className="gallery-desktop-filters">
+          <GalleryFilters
+            state={filters}
+            facets={facets}
+            onChange={onFiltersChange}
+            onClear={onClearFilters}
+          />
+        </div>
+        <MobileFilterSheet state={filters} facets={facets} onApply={onFiltersChange} />
+      </section>
+      <ActiveFilterSummary state={filters} facets={facets} totalCount={totalCount} />
       {isLoading ? <div className="gallery-status">{t('gallery.loading')}</div> : null}
       {error ? <div className="gallery-status error">{t('gallery.loadError')}</div> : null}
       {!isLoading && !error && memories.length === 0 ? (
-        <div className="gallery-status">{t('gallery.empty')}</div>
+        <div className="gallery-status">
+          {hasActiveFilters ? t('gallery.noResults') : t('gallery.empty')}
+        </div>
       ) : null}
       {memories.length > 0 ? (
         <GalleryGrid memories={memories} variant="masonry" isOwner={isOwner} />
@@ -92,6 +102,8 @@ export function GalleryPage({
             type="button"
             onClick={onNextPage}
             disabled={!hasNextPage || isFetchingPage}
+            onFocus={onPrefetchNextPage}
+            onMouseEnter={onPrefetchNextPage}
           >
             {isFetchingPage ? t('gallery.loadingPage') : t('gallery.nextPage')}
           </button>

@@ -26,9 +26,13 @@ vi.mock('./hooks/useOwnerSession', () => ({
   useOwnerSession: () => ({ data: { isOwner: false, displayName: null } }),
 }));
 
+vi.mock('./hooks/useMemoryFacets', () => ({
+  useMemoryFacets: () => ({ data: { years: [] } }),
+}));
+
 vi.mock('./pages/GalleryPage', () => ({
-  GalleryPage: ({ onCategoryChange }: { onCategoryChange: (category: 'Travel') => void }) => (
-    <button type="button" onClick={() => onCategoryChange('Travel')}>Filter Travel</button>
+  GalleryPage: ({ onFiltersChange }: { onFiltersChange: (next: { category: 'Travel' }) => void }) => (
+    <button type="button" onClick={() => onFiltersChange({ category: 'Travel' })}>Filter Travel</button>
   ),
 }));
 

@@ -881,6 +881,236 @@
   text-align: center;
 }
 
+/* Gallery discovery controls */
+.gallery-discovery-panel {
+  display: grid;
+  gap: 14px;
+  max-width: 980px;
+  margin: 28px auto 0;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: rgba(255, 250, 245, .78);
+  box-shadow: 0 10px 30px rgba(79, 52, 42, .05);
+}
+
+.gallery-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.gallery-search input {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 48px 10px 13px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  color: var(--ink);
+  background: #fffdf9;
+}
+
+.gallery-search input:focus-visible,
+.gallery-filters select:focus-visible,
+.gallery-filters button:focus-visible,
+.gallery-mobile-filters button:focus-visible,
+.gallery-filter-dialog button:focus-visible {
+  outline: 3px solid rgba(168, 95, 88, .32);
+  outline-offset: 2px;
+}
+
+.gallery-clear-search {
+  position: absolute;
+  right: 8px;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 6px;
+  color: var(--rose-deep);
+  background: transparent;
+  font-size: 11px;
+}
+
+.gallery-filters {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px 16px;
+  align-items: center;
+}
+
+.gallery-category-chips,
+.gallery-date-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.gallery-category-chips button,
+.gallery-clear-filters {
+  min-height: 36px;
+  padding: 7px 11px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--muted);
+  background: #fffaf5;
+  font-size: 11px;
+}
+
+.gallery-category-chips button.active {
+  border-color: var(--rose);
+  color: var(--rose-deep);
+  background: rgba(201, 130, 120, .12);
+}
+
+.gallery-date-filters {
+  grid-column: 1 / -1;
+  padding-top: 2px;
+}
+
+.gallery-date-filters label {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.gallery-date-filters select {
+  min-height: 36px;
+  padding: 7px 26px 7px 9px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  color: var(--ink);
+  background: #fffdf9;
+}
+
+.gallery-date-filters select:disabled {
+  cursor: not-allowed;
+  opacity: .6;
+}
+
+.gallery-clear-filters {
+  white-space: nowrap;
+}
+
+.gallery-mobile-filters {
+  display: none;
+}
+
+.gallery-result-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  max-width: 980px;
+  margin: 14px auto 0;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.gallery-active-filters {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.gallery-active-filters span {
+  padding: 3px 7px;
+  border-radius: 999px;
+  color: var(--rose-deep);
+  background: rgba(201, 130, 120, .11);
+}
+
+.gallery-filter-dialog {
+  width: min(100%, 680px);
+  max-width: 680px;
+  max-height: min(82dvh, 720px);
+  margin: auto auto 0;
+  padding: 22px 18px calc(18px + env(safe-area-inset-bottom));
+  border: 1px solid var(--line);
+  border-radius: 18px 18px 0 0;
+  color: var(--ink);
+  background: #fffaf5;
+  box-shadow: 0 -14px 48px rgba(68, 45, 37, .18);
+}
+
+.gallery-filter-dialog::backdrop {
+  background: rgba(51, 38, 32, .38);
+}
+
+.gallery-filter-dialog-copy h2,
+.gallery-filter-dialog-copy p {
+  margin: 0;
+}
+
+.gallery-filter-dialog-copy h2 {
+  font: 600 28px 'Cormorant Garamond', serif;
+}
+
+.gallery-filter-dialog-copy p {
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.gallery-filter-dialog .gallery-filters {
+  grid-template-columns: 1fr;
+  margin-top: 18px;
+}
+
+.gallery-filter-dialog .gallery-clear-filters {
+  justify-self: start;
+}
+
+.gallery-filter-dialog-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+@media (max-width: 620px) {
+  .gallery-discovery-panel {
+    margin-top: 20px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .gallery-desktop-filters {
+    display: none;
+  }
+
+  .gallery-mobile-filters {
+    display: block;
+  }
+
+  .gallery-mobile-filters .secondary-button {
+    width: 100%;
+  }
+
+  .gallery-result-summary {
+    margin-top: 12px;
+  }
+
+  .gallery-filter-dialog .gallery-category-chips {
+    gap: 7px;
+  }
+
+  .gallery-filter-dialog .gallery-date-filters {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gallery-search input,
+  .gallery-filters button,
+  .gallery-filter-dialog,
+  .gallery-filter-dialog::backdrop {
+    transition-duration: .01ms !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+
 .timeline-river {
   position: relative;
   max-width: 980px;

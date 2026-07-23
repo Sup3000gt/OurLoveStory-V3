@@ -2,7 +2,10 @@ import { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { LanguageProvider } from '../i18n/LanguageProvider';
+import { emptyGalleryFilterState } from '../lib/gallery-filters';
 import { GalleryPage } from './GalleryPage';
+
+(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 describe('GalleryPage pagination', () => {
   let root: ReturnType<typeof createRoot> | undefined;
@@ -18,7 +21,7 @@ describe('GalleryPage pagination', () => {
   it('shows page navigation instead of appending a Load more list', () => {
     const previousPage = vi.fn();
     const nextPage = vi.fn();
-    const categoryChange = vi.fn();
+    const prefetchNextPage = vi.fn();
     container = document.createElement('div');
     document.body.append(container);
     root = createRoot(container);
@@ -30,7 +33,9 @@ describe('GalleryPage pagination', () => {
           isLoading={false}
           error={null}
           isOwner={false}
-          category="All"
+          filters={emptyGalleryFilterState}
+          facets={undefined}
+          totalCount={0}
           currentPage={1}
           totalPages={2}
           hasPreviousPage={false}
@@ -38,7 +43,9 @@ describe('GalleryPage pagination', () => {
           isFetchingPage={false}
           onPreviousPage={previousPage}
           onNextPage={nextPage}
-          onCategoryChange={categoryChange}
+          onFiltersChange={vi.fn()}
+          onClearFilters={vi.fn()}
+          onPrefetchNextPage={prefetchNextPage}
         />
       </LanguageProvider>,
     ));
@@ -53,10 +60,14 @@ describe('GalleryPage pagination', () => {
     act(() => button?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
     expect(nextPage).toHaveBeenCalledOnce();
     expect(previousPage).not.toHaveBeenCalled();
+
+    act(() => button?.focus());
+    expect(prefetchNextPage).toHaveBeenCalledOnce();
   });
 
-  it('asks the parent to load a category from its first page', () => {
-    const categoryChange = vi.fn();
+  it('keeps the visible page unchanged when it prefetches the next page', () => {
+    const nextPage = vi.fn();
+    const prefetchNextPage = vi.fn();
     container = document.createElement('div');
     document.body.append(container);
     root = createRoot(container);
@@ -68,24 +79,30 @@ describe('GalleryPage pagination', () => {
           isLoading={false}
           error={null}
           isOwner={false}
-          category="All"
-          currentPage={2}
+          filters={emptyGalleryFilterState}
+          facets={undefined}
+          totalCount={0}
+          currentPage={1}
           totalPages={2}
-          hasPreviousPage
-          hasNextPage={false}
+          hasPreviousPage={false}
+          hasNextPage
           isFetchingPage={false}
           onPreviousPage={vi.fn()}
-          onNextPage={vi.fn()}
-          onCategoryChange={categoryChange}
+          onNextPage={nextPage}
+          onFiltersChange={vi.fn()}
+          onClearFilters={vi.fn()}
+          onPrefetchNextPage={prefetchNextPage}
         />
       </LanguageProvider>,
     ));
 
     const button = Array.from(container.querySelectorAll('button'))
-      .find((item) => item.textContent?.includes('Travel'));
+      .find((item) => item.textContent?.includes('Next page'));
 
-    act(() => button?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+    act(() => button?.focus());
 
-    expect(categoryChange).toHaveBeenCalledWith('Travel');
+    expect(prefetchNextPage).toHaveBeenCalledOnce();
+    expect(nextPage).not.toHaveBeenCalled();
+    expect(container.textContent).toContain('Page 1');
   });
 });

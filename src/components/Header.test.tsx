@@ -6,8 +6,9 @@ import { LanguageProvider } from '../i18n/LanguageProvider';
 import App from '../App';
 import { Header } from './Header';
 
-const { useMemories, useOwnerSession, useTimeline } = vi.hoisted(() => ({
+const { useMemories, useMemoryFacets, useOwnerSession, useTimeline } = vi.hoisted(() => ({
   useMemories: vi.fn(),
+  useMemoryFacets: vi.fn(),
   useOwnerSession: vi.fn(),
   useTimeline: vi.fn(),
 }));
@@ -18,6 +19,7 @@ vi.mock('@clerk/react', () => ({
   UserButton: () => null,
 }));
 vi.mock('../hooks/useMemories', () => ({ useMemories }));
+vi.mock('../hooks/useMemoryFacets', () => ({ useMemoryFacets }));
 vi.mock('../hooks/useOwnerSession', () => ({ useOwnerSession }));
 vi.mock('../hooks/useTimeline', () => ({ useTimeline }));
 vi.mock('../contexts/PhotoSessionUploadContext', () => ({
@@ -70,6 +72,7 @@ describe('Header', () => {
     unmountHeader();
     window.localStorage.removeItem('our-love-story-language');
     useMemories.mockReset();
+    useMemoryFacets.mockReset();
     useOwnerSession.mockReset();
     useTimeline.mockReset();
   });
@@ -102,6 +105,7 @@ describe('Header', () => {
       fetchNextPage: vi.fn(),
     });
     useTimeline.mockReturnValue({ data: { years: [] }, isLoading: false, error: null });
+    useMemoryFacets.mockReturnValue({ data: { years: [] } });
 
     expect(renderApp('/timeline').querySelector('h1')?.textContent).toBe('A river of memories.');
 
