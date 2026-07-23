@@ -113,4 +113,35 @@ describe('TimelineMonthPage', () => {
     expect(container.querySelector('.gallery-pagination')!.compareDocumentPosition(navigators[1])
       & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
+
+  it('navigates from an empty month to surrounding non-empty archives', () => {
+    useTimeline.mockReturnValue({ data: timeline, isLoading: false, error: null });
+    useTimelineMonth.mockReturnValue({
+      data: { pages: [{ memories: [], nextCursor: null }] },
+      isLoading: false,
+      error: null,
+      hasNextPage: false,
+      isFetchingNextPage: false,
+    });
+
+    container = document.createElement('div');
+    document.body.append(container);
+    root = createRoot(container);
+    act(() => root?.render(
+      <LanguageProvider>
+        <MemoryRouter initialEntries={['/timeline/2025-05']}>
+          <Routes>
+            <Route path="/timeline/:monthKey" element={<TimelineMonthPage />} />
+          </Routes>
+        </MemoryRouter>
+      </LanguageProvider>,
+    ));
+
+    expect(container.textContent).toContain('There are no public memories from this month yet.');
+    expect(Array.from(container.querySelectorAll<HTMLAnchorElement>('.timeline-month-navigator a'))
+      .map((link) => link.getAttribute('href'))).toEqual([
+        '/timeline/2025-04',
+        '/timeline/2025-06',
+      ]);
+  });
 });

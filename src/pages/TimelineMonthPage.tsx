@@ -7,7 +7,7 @@ import { timelineMonthTranslationKeys } from '../i18n/translations';
 import { useTranslation } from '../i18n/useTranslation';
 import { getGalleryPageState } from '../lib/gallery-pagination';
 import { parseTimelineMonthKey } from '../lib/timeline';
-import { adjacentTimelineMonths, visibleTimelineMonths } from '../lib/timeline-navigation';
+import { adjacentTimelineMonths } from '../lib/timeline-navigation';
 import { useTimelineMonth } from '../hooks/useTimelineMonth';
 
 export function TimelineMonthPage() {
@@ -29,7 +29,7 @@ export function TimelineMonthPage() {
     })
     : t('timeline.title');
   const adjacentMonths = timelineQuery.data
-    ? adjacentTimelineMonths(visibleTimelineMonths(timelineQuery.data), monthKey)
+    ? adjacentTimelineMonths(timelineQuery.data.years.flatMap((year) => year.months), monthKey)
     : { previous: null, next: null };
 
   const goToPreviousPage = () => {

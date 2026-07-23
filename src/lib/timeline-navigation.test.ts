@@ -57,4 +57,17 @@ describe('timeline navigation', () => {
       next: null,
     });
   });
+
+  it('finds neighboring non-empty archives from an empty current month', () => {
+    const months = [
+      month('2026-03', '2026', 3, 8),
+      month('2026-04', '2026', 4, 0),
+      month('2026-05', '2026', 5, 32),
+    ];
+
+    expect(adjacentTimelineMonths(months, '2026-04')).toEqual({
+      previous: '2026-03',
+      next: '2026-05',
+    });
+  });
 });

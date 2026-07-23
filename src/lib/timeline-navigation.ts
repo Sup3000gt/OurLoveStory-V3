@@ -16,16 +16,20 @@ export function adjacentTimelineMonths(
   months: TimelineMonth[],
   currentKey: string,
 ): { previous: string | null; next: string | null } {
-  const visibleMonths = months
-    .filter((month) => month.photoCount > 0)
+  const timelineMonths = months
     .slice()
     .sort((left, right) => Number(left.year) - Number(right.year) || left.month - right.month);
-  const currentIndex = visibleMonths.findIndex((month) => month.key === currentKey);
+  const currentIndex = timelineMonths.findIndex((month) => month.key === currentKey);
 
   if (currentIndex === -1) return { previous: null, next: null };
 
   return {
-    previous: visibleMonths[currentIndex - 1]?.key ?? null,
-    next: visibleMonths[currentIndex + 1]?.key ?? null,
+    previous: timelineMonths
+      .slice(0, currentIndex)
+      .reverse()
+      .find((month) => month.photoCount > 0)?.key ?? null,
+    next: timelineMonths
+      .slice(currentIndex + 1)
+      .find((month) => month.photoCount > 0)?.key ?? null,
   };
 }
