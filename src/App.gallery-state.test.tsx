@@ -16,8 +16,9 @@ vi.mock('./hooks/useMemories', () => ({
     data: { pages: [{ memories: [], nextCursor: null, totalCount: 0 }] },
     isLoading: false,
     error: null,
-    hasNextPage: false,
+    hasNextPage: true,
     isFetchingNextPage: false,
+    fetchStatus: 'idle',
     fetchNextPage: vi.fn(),
   }),
 }));
@@ -31,8 +32,17 @@ vi.mock('./hooks/useMemoryFacets', () => ({
 }));
 
 vi.mock('./pages/GalleryPage', () => ({
-  GalleryPage: ({ onFiltersChange }: { onFiltersChange: (next: { category: 'Travel' }) => void }) => (
-    <button type="button" onClick={() => onFiltersChange({ category: 'Travel' })}>Filter Travel</button>
+  GalleryPage: ({
+    onFiltersChange,
+    onPrefetchNextPage,
+  }: {
+    onFiltersChange: (next: { category: 'Travel' }) => void;
+    onPrefetchNextPage: () => void;
+  }) => (
+    <>
+      <button type="button" onClick={() => onFiltersChange({ category: 'Travel' })}>Filter Travel</button>
+      <button type="button" onClick={onPrefetchNextPage}>Prefetch next</button>
+    </>
   ),
 }));
 
@@ -60,5 +70,33 @@ describe('App gallery URL state', () => {
     act(() => button?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
 
     expect(window.location.search).toBe('?category=Travel');
+  });
+
+  it('rewrites malformed and legacy gallery parameters on first render', () => {
+    window.history.replaceState({}, '', '/gallery?year=bad&month=5&cursor=old&page=2');
+    container = document.createElement('div');
+    document.body.append(container);
+    root = createRoot(container);
+
+    act(() => root?.render(<App />));
+
+    expect(window.location.search).toBe('');
+  });
+
+  it('cancels a pending gallery prefetch when filters change', () => {
+    window.history.replaceState({}, '', '/gallery');
+    const requestIdleCallback = vi.fn((_run: () => void) => 11);
+    const cancelIdleCallback = vi.fn();
+    Object.assign(window, { requestIdleCallback, cancelIdleCallback });
+    container = document.createElement('div');
+    document.body.append(container);
+    root = createRoot(container);
+
+    act(() => root?.render(<App />));
+    const buttons = container.querySelectorAll('button');
+    act(() => buttons[1]?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+    act(() => buttons[0]?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+
+    expect(cancelIdleCallback).toHaveBeenCalledWith(11);
   });
 });

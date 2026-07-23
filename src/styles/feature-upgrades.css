@@ -1187,6 +1187,20 @@
   }
 
   .gallery-desktop-filters {
+    display: block;
+    overflow: hidden;
+  }
+
+  .gallery-desktop-filters .gallery-category-chips {
+    flex-wrap: nowrap;
+    max-width: 100%;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    scrollbar-width: thin;
+  }
+
+  .gallery-desktop-filters .gallery-date-filters,
+  .gallery-desktop-filters .gallery-clear-filters {
     display: none;
   }
 

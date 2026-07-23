@@ -3,7 +3,7 @@ import {
   Route,
   Routes,
 } from 'react-router-dom';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Header,
 } from './components/Header';
@@ -85,8 +85,28 @@ function AppRoutes() {
   );
 
   const galleryFilterIdentity = JSON.stringify(filters);
+  const prefetchCancelRef = useRef<(() => void) | null>(null);
+  const prefetchRunRef = useRef<() => void>(() => undefined);
+
+  prefetchRunRef.current = () => {
+    const connection = navigator as Navigator & { connection?: { saveData?: boolean } };
+    const isLastLoadedPage = galleryPageIndex === galleryPage.totalPages - 1;
+    if (
+      !isLastLoadedPage
+      || !galleryQuery.hasNextPage
+      || galleryQuery.fetchStatus !== 'idle'
+      || galleryQuery.isFetchingNextPage
+      || connection.connection?.saveData === true
+    ) return;
+    void galleryQuery.fetchNextPage();
+  };
+
   useEffect(() => {
     setGalleryPageIndex(0);
+    return () => {
+      prefetchCancelRef.current?.();
+      prefetchCancelRef.current = null;
+    };
   }, [galleryFilterIdentity]);
 
   const goToPreviousGalleryPage = () => {
@@ -108,16 +128,10 @@ function AppRoutes() {
   };
 
   const prefetchNextGalleryPage = () => {
-    scheduleWhenIdle(() => {
-      const connection = navigator as Navigator & { connection?: { saveData?: boolean } };
-      const isLastLoadedPage = galleryPageIndex === galleryPage.totalPages - 1;
-      if (
-        !isLastLoadedPage
-        || !galleryQuery.hasNextPage
-        || galleryQuery.fetchStatus !== 'idle'
-        || connection.connection?.saveData === true
-      ) return;
-      void galleryQuery.fetchNextPage();
+    prefetchCancelRef.current?.();
+    prefetchCancelRef.current = scheduleWhenIdle(() => {
+      prefetchCancelRef.current = null;
+      prefetchRunRef.current();
     });
   };
 

@@ -4,7 +4,7 @@ import { useMemo } from 'react';
 import { getMemories, type MemoryPageOptions } from '../lib/api';
 
 export function useMemories(options: MemoryPageOptions = {}) {
-  const { isLoaded, isSignedIn, getToken } = useAuth();
+  const { isLoaded, isSignedIn, userId, getToken } = useAuth();
   const memoryOptions = useMemo(() => ({
     cursor: options.cursor ?? null,
     limit: options.limit ?? 12,
@@ -22,7 +22,7 @@ export function useMemories(options: MemoryPageOptions = {}) {
   ]);
 
   return useInfiniteQuery({
-    queryKey: ['memories', memoryOptions, isSignedIn],
+    queryKey: ['memories', memoryOptions, isSignedIn, userId],
     queryFn: ({ pageParam }) => getMemories(
       isSignedIn ? getToken : undefined,
       { ...memoryOptions, cursor: pageParam },
@@ -32,6 +32,11 @@ export function useMemories(options: MemoryPageOptions = {}) {
     enabled: isLoaded,
     staleTime: 30_000,
     retry: 1,
-    placeholderData: (previousData) => previousData,
+    placeholderData: (previousData, previousQuery) => {
+      const previousUserId = Array.isArray(previousQuery?.queryKey)
+        ? previousQuery.queryKey[3]
+        : undefined;
+      return previousUserId === userId ? previousData : undefined;
+    },
   });
 }

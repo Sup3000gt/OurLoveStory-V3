@@ -1,5 +1,5 @@
-import { useCallback, useMemo } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useCallback, useEffect, useMemo } from 'react';
+import { useLocation, useSearchParams } from 'react-router-dom';
 import {
   normalizeGalleryFilterState,
   parseGallerySearch,
@@ -17,12 +17,22 @@ export interface GalleryFiltersController {
 }
 
 export function useGalleryFilters(): GalleryFiltersController {
+  const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const search = searchParams.toString();
   const filters = useMemo(
     () => parseGallerySearch(search),
     [search],
   );
+  const canonicalSearch = toGallerySearch(filters);
+  const canonicalParams = canonicalSearch.startsWith('?')
+    ? canonicalSearch.slice(1)
+    : canonicalSearch;
+
+  useEffect(() => {
+    if (location.pathname !== '/gallery' || search === canonicalParams) return;
+    setSearchParams(canonicalSearch, { replace: true });
+  }, [canonicalParams, canonicalSearch, location.pathname, search, setSearchParams]);
 
   const updateFilters = useCallback((
     next: GalleryFilterState,
