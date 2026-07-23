@@ -80,6 +80,7 @@ describe('Header', () => {
     expect(header.querySelector('nav a[href="/"]')?.textContent).toBe('Home');
     expect(header.querySelector('nav a[href="/gallery"]')?.textContent).toBe('Gallery');
     expect(header.querySelector('nav a[href="/timeline"]')?.textContent).toBe('Journal');
+    expect(header.querySelector('nav a[href="/#about"]')).toBeNull();
   });
 
   it('shows the Studio destination only for an owner', () => {

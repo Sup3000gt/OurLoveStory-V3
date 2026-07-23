@@ -81,7 +81,7 @@ export function HomePage({
         </div>
       </section>
 
-      <section className="quote-band" id="about">
+      <section className="quote-band">
         <p>{t('home.quote')}</p>
         <em>{t('home.always')}</em>
       </section>
