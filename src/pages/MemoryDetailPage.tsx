@@ -22,6 +22,7 @@ import {
 } from 'react';
 import {
   Link,
+  useLocation,
   useNavigate,
   useParams,
 } from 'react-router-dom';
@@ -45,7 +46,9 @@ import {
   useTranslation,
 } from '../i18n/useTranslation';
 import {
+  clearTimelineCover,
   deleteMemoryAsset,
+  setTimelineCover,
   updateAssetVisibility,
 } from '../lib/api';
 import {
@@ -85,6 +88,9 @@ export function MemoryDetailPage({
 
   const navigate =
     useNavigate();
+
+  const location =
+    useLocation();
 
   const {
     language,
@@ -130,10 +136,23 @@ export function MemoryDetailPage({
     setSelectedImageId,
   ] = useState<string | null>(null);
 
+  const [
+    pendingTimelineAssetId,
+    setPendingTimelineAssetId,
+  ] = useState<string | null>(null);
+
+  const [
+    timelineCoverError,
+    setTimelineCoverError,
+  ] = useState('');
+
   const successTimer =
     useRef<
       number | null
     >(null);
+
+  const initializedAssetQuery =
+    useRef<string | null>(null);
 
   const memoryFromList =
     memories.find(
@@ -147,6 +166,7 @@ export function MemoryDetailPage({
 
   const imageAssets = memory ? imageAssetsForLightbox(memory) : [];
   const selectedImage = imageAssets.find((asset) => asset.id === selectedImageId) ?? null;
+  const assetQuery = new URLSearchParams(location.search).get('asset');
 
   const activeAppend =
     memory
@@ -174,6 +194,35 @@ export function MemoryDetailPage({
       }
     },
     [],
+  );
+
+  useEffect(
+    () => {
+      if (
+        !memory
+        || initializedAssetQuery.current === assetQuery
+      ) {
+        return;
+      }
+
+      initializedAssetQuery.current = assetQuery;
+
+      const selectedAsset = imageAssets.find(
+        (asset) => asset.id === assetQuery
+          && asset.visibility === 'public',
+      );
+
+      setSelectedImageId(
+        selectedAsset
+          ? selectedAsset.id
+          : null,
+      );
+    },
+    [
+      assetQuery,
+      imageAssets,
+      memory,
+    ],
   );
 
   async function toggleVisibility(
@@ -373,6 +422,68 @@ export function MemoryDetailPage({
     }
   }
 
+  async function updateTimelineCover(
+    asset: MemoryAsset,
+    periodType: 'year' | 'month',
+    action: 'set' | 'clear',
+  ) {
+    if (
+      !isOwner
+      || !memory
+      || memory.status !== 'published'
+      || asset.type !== 'image'
+      || asset.visibility !== 'public'
+      || pendingTimelineAssetId !== null
+    ) {
+      return;
+    }
+
+    const periodKey =
+      periodType === 'year'
+        ? memory.date.slice(0, 4)
+        : memory.date.slice(0, 7);
+
+    setTimelineCoverError('');
+    setPendingTimelineAssetId(
+      asset.id,
+    );
+
+    try {
+      if (action === 'set') {
+        await setTimelineCover(
+          {
+            periodType,
+            periodKey,
+            assetId: asset.id,
+          },
+          getToken,
+        );
+      } else {
+        await clearTimelineCover(
+          periodType,
+          periodKey,
+          getToken,
+        );
+      }
+
+      await queryClient.invalidateQueries({
+        queryKey: [
+          'timeline',
+        ],
+      });
+    } catch {
+      setTimelineCoverError(
+        t(
+          'detail.timelineCoverFailed',
+        ),
+      );
+    } finally {
+      setPendingTimelineAssetId(
+        null,
+      );
+    }
+  }
+
   if (isLoading || memoryQuery.isLoading) {
     return (
       <main className="detail-status">
@@ -518,6 +629,15 @@ export function MemoryDetailPage({
             role="alert"
           >
             {deleteError}
+          </p>
+        ) : null}
+
+        {timelineCoverError ? (
+          <p
+            className="asset-visibility-error"
+            role="alert"
+          >
+            {timelineCoverError}
           </p>
         ) : null}
       </header>
@@ -687,6 +807,132 @@ export function MemoryDetailPage({
                     </a>
                   ) : null}
                 </div>
+
+                {isOwner
+                && memory.status === 'published'
+                && asset.type === 'image'
+                && asset.visibility === 'public' ? (
+                  <details
+                    className="asset-timeline-cover-controls"
+                    data-timeline-cover-controls={asset.id}
+                  >
+                    <summary>
+                      {t(
+                        'detail.timelineCoverControls',
+                      )}
+                    </summary>
+
+                    <div className="asset-timeline-cover-actions">
+                      <button
+                        type="button"
+                        disabled={
+                          pendingTimelineAssetId !== null
+                        }
+                        onClick={() =>
+                          void updateTimelineCover(
+                            asset,
+                            'year',
+                            'set',
+                          )
+                        }
+                      >
+                        {pendingTimelineAssetId
+                          === asset.id
+                          ? t(
+                              'detail.timelineCoverSaving',
+                            )
+                          : t(
+                              'detail.setYearCover',
+                              {
+                                year:
+                                  memory.date.slice(0, 4),
+                              },
+                            )}
+                      </button>
+
+                      <button
+                        type="button"
+                        disabled={
+                          pendingTimelineAssetId !== null
+                        }
+                        onClick={() =>
+                          void updateTimelineCover(
+                            asset,
+                            'month',
+                            'set',
+                          )
+                        }
+                      >
+                        {pendingTimelineAssetId
+                          === asset.id
+                          ? t(
+                              'detail.timelineCoverSaving',
+                            )
+                          : t(
+                              'detail.setMonthCover',
+                              {
+                                month:
+                                  memory.date.slice(0, 7),
+                              },
+                            )}
+                      </button>
+
+                      <button
+                        type="button"
+                        disabled={
+                          pendingTimelineAssetId !== null
+                        }
+                        onClick={() =>
+                          void updateTimelineCover(
+                            asset,
+                            'year',
+                            'clear',
+                          )
+                        }
+                      >
+                        {pendingTimelineAssetId
+                          === asset.id
+                          ? t(
+                              'detail.timelineCoverSaving',
+                            )
+                          : t(
+                              'detail.clearYearCover',
+                              {
+                                year:
+                                  memory.date.slice(0, 4),
+                              },
+                            )}
+                      </button>
+
+                      <button
+                        type="button"
+                        disabled={
+                          pendingTimelineAssetId !== null
+                        }
+                        onClick={() =>
+                          void updateTimelineCover(
+                            asset,
+                            'month',
+                            'clear',
+                          )
+                        }
+                      >
+                        {pendingTimelineAssetId
+                          === asset.id
+                          ? t(
+                              'detail.timelineCoverSaving',
+                            )
+                          : t(
+                              'detail.clearMonthCover',
+                              {
+                                month:
+                                  memory.date.slice(0, 7),
+                              },
+                            )}
+                      </button>
+                    </div>
+                  </details>
+                ) : null}
               </div>
             </article>
           ),

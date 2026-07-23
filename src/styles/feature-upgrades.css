@@ -115,6 +115,52 @@
   flex-wrap: wrap;
 }
 
+.asset-footer {
+  flex-wrap: wrap;
+}
+
+.asset-timeline-cover-controls {
+  flex: 0 0 100%;
+  width: 100%;
+  border-top: 1px solid rgba(151, 112, 94, .18);
+  padding-top: 10px;
+}
+
+.asset-timeline-cover-controls summary {
+  color: #6f493c;
+  font-size: 11px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.asset-timeline-cover-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.asset-timeline-cover-actions button {
+  min-height: 34px;
+  border: 1px solid rgba(159, 105, 88, .25);
+  border-radius: 9px;
+  color: #824f40;
+  background: #fdf4f0;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.asset-timeline-cover-actions button:hover:not(:disabled) {
+  background: #f8e4dc;
+}
+
+.asset-timeline-cover-actions button:disabled {
+  cursor: wait;
+  opacity: .68;
+}
+
 .asset-filename {
   min-width: 0;
   overflow: hidden;
@@ -214,6 +260,10 @@
   .asset-visibility-toggle,
   .asset-footer-actions .secondary-button {
     width: 100%;
+  }
+
+  .asset-timeline-cover-actions {
+    grid-template-columns: 1fr;
   }
 
   .language-switch {
