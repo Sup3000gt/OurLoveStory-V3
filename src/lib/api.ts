@@ -11,6 +11,9 @@ import type {
   OwnerSession,
   RecordSessionFailureRequest,
   RecordSessionUploadRequest,
+  TimelineCoverInput,
+  TimelinePeriodType,
+  TimelineResponse,
   UpdateAssetVisibilityResponse,
   UpdateSessionFileRequest,
   UpdateSessionReviewRequest,
@@ -117,6 +120,38 @@ export async function getMemory(
   return await apiRequest<Memory>(
     `/memories/${encodeURIComponent(memoryId)}`,
     getToken,
+  );
+}
+
+export async function getTimeline(): Promise<TimelineResponse> {
+  return apiRequest<TimelineResponse>('/timeline');
+}
+
+export async function setTimelineCover(
+  input: TimelineCoverInput,
+  getToken: GetToken,
+): Promise<TimelineCoverInput> {
+  return apiRequest<TimelineCoverInput>(
+    '/timeline/covers',
+    getToken,
+    {
+      method: 'PUT',
+      body: JSON.stringify(input),
+    },
+  );
+}
+
+export async function clearTimelineCover(
+  periodType: TimelinePeriodType,
+  periodKey: string,
+  getToken: GetToken,
+): Promise<void> {
+  const params = new URLSearchParams({ periodType, periodKey });
+
+  return apiRequest<void>(
+    `/timeline/covers?${params.toString()}`,
+    getToken,
+    { method: 'DELETE' },
   );
 }
 
