@@ -16,6 +16,13 @@ export interface MemoryFacets {
   years: Array<{ year: number; months: number[] }>;
 }
 
+export class MemoryDiscoveryValidationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'MemoryDiscoveryValidationError';
+  }
+}
+
 function normalizeText(value: unknown): string | null {
   if (typeof value !== 'string') {
     return null;
@@ -27,27 +34,53 @@ function normalizeText(value: unknown): string | null {
 
 function normalizeCategory(value: unknown): MemoryCategory | null {
   const normalized = normalizeText(value);
-  return normalized && MEMORY_CATEGORIES.includes(normalized as MemoryCategory)
-    ? normalized as MemoryCategory
-    : null;
+  if (normalized === null && (value == null || typeof value === 'string')) {
+    return null;
+  }
+  if (!normalized || !MEMORY_CATEGORIES.includes(normalized as MemoryCategory)) {
+    throw new MemoryDiscoveryValidationError(
+      'Category must be a valid memory category.',
+    );
+  }
+  return normalized as MemoryCategory;
 }
 
 function normalizeYear(value: unknown): string | null {
   const normalized = normalizeText(value);
-  return normalized && /^\d{4}$/.test(normalized) ? normalized : null;
+  if (normalized === null && (value == null || typeof value === 'string')) {
+    return null;
+  }
+  if (!normalized || !/^\d{4}$/.test(normalized)) {
+    throw new MemoryDiscoveryValidationError('Year must use YYYY format.');
+  }
+  return normalized;
 }
 
 function normalizeMonth(value: unknown): number | null {
   if (typeof value === 'number' && Number.isInteger(value)) {
-    return value >= 1 && value <= 12 ? value : null;
+    if (value >= 1 && value <= 12) return value;
+    throw new MemoryDiscoveryValidationError(
+      'Month must be an integer from 1 to 12.',
+    );
   }
 
-  if (typeof value !== 'string' || !/^\d{1,2}$/.test(value.trim())) {
+  if (value == null || (typeof value === 'string' && !value.trim())) {
     return null;
   }
 
+  if (typeof value !== 'string' || !/^\d{1,2}$/.test(value.trim())) {
+    throw new MemoryDiscoveryValidationError(
+      'Month must be an integer from 1 to 12.',
+    );
+  }
+
   const month = Number(value.trim());
-  return month >= 1 && month <= 12 ? month : null;
+  if (month < 1 || month > 12) {
+    throw new MemoryDiscoveryValidationError(
+      'Month must be an integer from 1 to 12.',
+    );
+  }
+  return month;
 }
 
 export function normalizeMemoryDiscoveryFilters(input: {
@@ -58,13 +91,13 @@ export function normalizeMemoryDiscoveryFilters(input: {
 }): MemoryDiscoveryFilters {
   const query = normalizeText(input.query);
   if (query && query.length > MAX_MEMORY_SEARCH_LENGTH) {
-    throw new Error('Search query is too long.');
+    throw new MemoryDiscoveryValidationError('Search query is too long.');
   }
 
   const year = normalizeYear(input.year);
   const month = normalizeMonth(input.month);
   if (month !== null && year === null) {
-    throw new Error('Month requires a year.');
+    throw new MemoryDiscoveryValidationError('Month requires a year.');
   }
 
   return {

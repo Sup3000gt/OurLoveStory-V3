@@ -20,7 +20,11 @@ import {
   matchImageRoute,
 } from './lib/image-routes';
 import { normalizeMemoryPageSize } from './lib/memory-pagination';
-import { parseMemoryDiscoveryFilters } from '../shared/memory-discovery';
+import {
+  MemoryDiscoveryValidationError,
+  parseMemoryDiscoveryFilters,
+} from '../shared/memory-discovery';
+import type { MemoryDiscoveryFilters } from '../shared/memory-discovery';
 import {
   clearTimelineCover,
   listTimeline,
@@ -143,7 +147,15 @@ export default {
 
       if (url.pathname === '/api/memories') {
         if (request.method === 'GET') {
-          const filters = parseMemoryDiscoveryFilters(url.searchParams);
+          let filters: MemoryDiscoveryFilters;
+          try {
+            filters = parseMemoryDiscoveryFilters(url.searchParams);
+          } catch (error) {
+            if (error instanceof MemoryDiscoveryValidationError) {
+              return json({ error: error.message }, { status: 400 });
+            }
+            throw error;
+          }
           const owner = await optionalOwner(
             request,
             env,
