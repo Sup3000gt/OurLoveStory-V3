@@ -11,6 +11,47 @@ export type Visibility = 'public' | 'private';
 export type MemoryStatus = 'draft' | 'published';
 export type MediaType = 'image' | 'video';
 
+export type TimelinePeriodType = 'year' | 'month';
+
+export interface TimelineCoverInput {
+  periodType: TimelinePeriodType;
+  periodKey: string;
+  assetId: string;
+}
+
+export interface TimelinePhoto {
+  memoryId: string;
+  memoryTitle: string;
+  memoryDate: string;
+  memoryLocation: string;
+  assetId: string;
+  previewUrl: string;
+  thumbnailUrl: string;
+  filename: string;
+  isExplicitCover: boolean;
+}
+
+export interface TimelineMonth {
+  key: string;
+  year: string;
+  month: number;
+  label: string;
+  photoCount: number;
+  cover: TimelinePhoto;
+}
+
+export interface TimelineYear {
+  key: string;
+  label: string;
+  photoCount: number;
+  cover: TimelinePhoto;
+  months: TimelineMonth[];
+}
+
+export interface TimelineResponse {
+  years: TimelineYear[];
+}
+
 export interface ImageAsset {
   id: string;
   type: 'image';

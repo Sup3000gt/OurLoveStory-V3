@@ -133,6 +133,21 @@ CREATE TABLE IF NOT EXISTS upload_session_files (
     ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS timeline_covers (
+  id TEXT PRIMARY KEY,
+  period_type TEXT NOT NULL CHECK (period_type IN ('year', 'month')),
+  period_key TEXT NOT NULL,
+  memory_id TEXT NOT NULL,
+  asset_id TEXT NOT NULL,
+  created_by TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE (period_type, period_key),
+  FOREIGN KEY (memory_id) REFERENCES memories(id) ON DELETE CASCADE,
+  FOREIGN KEY (asset_id) REFERENCES media_assets(id) ON DELETE CASCADE,
+  FOREIGN KEY (created_by) REFERENCES owners(clerk_user_id)
+);
+
 CREATE INDEX IF NOT EXISTS idx_memories_status_visibility_date
   ON memories(status, visibility, taken_at DESC);
 CREATE INDEX IF NOT EXISTS idx_memories_featured_date
@@ -162,3 +177,5 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_one_active_append_session_per_memory
   ON upload_sessions(memory_id)
   WHERE session_kind = 'append'
     AND session_status IN ('uploading', 'review');
+CREATE INDEX IF NOT EXISTS idx_timeline_covers_period
+  ON timeline_covers(period_type, period_key);
