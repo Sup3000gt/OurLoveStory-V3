@@ -163,6 +163,24 @@ describe('listTimeline', () => {
       'august-public',
     ]));
   });
+
+  it('ignores an explicit cover after its memory moves to another period', async () => {
+    await db.prepare(`
+      UPDATE memories
+      SET taken_at = '2025-07-20'
+      WHERE id = 'memory-july'
+    `).run();
+
+    const timeline = await listTimeline(env);
+    const movedYear = timeline.years.find((year) => year.key === '2025');
+    const currentYear = timeline.years.find((year) => year.key === '2026');
+
+    expect(movedYear?.cover.isExplicitCover).toBe(false);
+    expect(currentYear?.cover).toMatchObject({
+      assetId: 'august-fallback',
+      isExplicitCover: false,
+    });
+  });
 });
 
 async function insertMemory(input: {

@@ -41,6 +41,7 @@ vi.mock('../components/ImageLightbox', () => ({
 import { MemoryDetailPage } from './MemoryDetailPage';
 import {
   clearTimelineCover,
+  deleteMemoryAsset,
   setTimelineCover,
   updateAssetVisibility,
 } from '../lib/api';
@@ -154,5 +155,35 @@ describe('MemoryDetailPage image delivery', () => {
     expect(updateAssetVisibility).not.toHaveBeenCalled();
     expect(memory.coverAssetId).toBe('image-owner');
     expect(container.querySelector('[data-timeline-cover-controls="image-guest"]')).not.toBeNull();
+  });
+
+  it('invalidates the timeline after making a public asset private', async () => {
+    vi.mocked(updateAssetVisibility).mockResolvedValue({ assetId: 'image-guest', visibility: 'private' });
+    const container = renderDetail(true);
+    const assetCard = container.querySelector('[data-timeline-cover-controls="image-guest"]')?.closest('article');
+    const visibilityButton = assetCard?.querySelector<HTMLButtonElement>('button.asset-visibility-toggle');
+
+    await act(async () => { visibilityButton?.click(); });
+
+    expect(updateAssetVisibility).toHaveBeenCalledWith('image-guest', 'private', expect.any(Function));
+    expect(queryClientMock.invalidateQueries).toHaveBeenCalledWith({ queryKey: ['timeline'] });
+  });
+
+  it('invalidates the timeline after deleting an asset', async () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    vi.mocked(deleteMemoryAsset).mockResolvedValue({
+      deletedAssetId: 'image-guest',
+      deletedMemory: false,
+      memoryId: 'memory-1',
+      replacementCoverAssetId: null,
+    });
+    const container = renderDetail(true);
+    const assetCard = container.querySelector('[data-timeline-cover-controls="image-guest"]')?.closest('article');
+    const deleteButton = assetCard?.querySelector<HTMLButtonElement>('button.asset-delete-button');
+
+    await act(async () => { deleteButton?.click(); });
+
+    expect(deleteMemoryAsset).toHaveBeenCalledWith('image-guest', expect.any(Function));
+    expect(queryClientMock.invalidateQueries).toHaveBeenCalledWith({ queryKey: ['timeline'] });
   });
 });

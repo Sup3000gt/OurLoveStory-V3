@@ -188,4 +188,14 @@ describe('TimelinePage', () => {
     expect(page.textContent).toContain('3 张照片');
     expect(page.textContent).toContain('1 张照片');
   });
+
+  it('localizes month labels in Chinese', () => {
+    window.localStorage.setItem('our-love-story-language', 'zh');
+    useTimeline.mockReturnValue({ data: timeline, isLoading: false, error: null });
+
+    const page = renderPage();
+
+    expect(page.textContent).toContain('2025年5月');
+    expect(page.textContent).not.toContain('May 2025');
+  });
 });

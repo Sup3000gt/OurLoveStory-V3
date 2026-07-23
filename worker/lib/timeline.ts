@@ -94,10 +94,12 @@ export async function listTimeline(env: Env): Promise<TimelineResponse> {
 
   const photos = photosResult.results.map(toPhotoRow);
   const explicitCovers = new Map(
-    coversResult.results.map((row) => [
-      `${row.period_type}:${row.period_key}`,
-      toPhotoRow(row),
-    ]),
+    coversResult.results
+      .filter((row) => matchesTimelinePeriod(row.memory_date, row.period_type, row.period_key))
+      .map((row) => [
+        `${row.period_type}:${row.period_key}`,
+        toPhotoRow(row),
+      ]),
   );
   const years = new Map<string, Map<string, TimelinePhotoRow[]>>();
 

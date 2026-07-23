@@ -1,5 +1,6 @@
 import { TimelinePhoto } from '../components/TimelinePhoto';
 import { useTimeline } from '../hooks/useTimeline';
+import { timelineMonthTranslationKeys } from '../i18n/translations';
 import { useTranslation } from '../i18n/useTranslation';
 import { timelineCoverHref } from '../lib/timeline';
 
@@ -49,21 +50,28 @@ export function TimelinePage() {
                   </article>
                   {months.length ? (
                     <div className="timeline-month-grid">
-                      {months.map((month) => (
+                      {months.map((month) => {
+                        const monthLabel = t('timeline.monthLabel', {
+                          month: t(timelineMonthTranslationKeys[month.month]),
+                          year: month.year,
+                        });
+
+                        return (
                         <article className="timeline-month-card" key={month.key}>
                           <a className="timeline-cover-link" href={timelineCoverHref(month.cover)}>
                             <TimelinePhoto
                               photo={month.cover}
-                              periodLabel={month.label}
+                              periodLabel={monthLabel}
                               loading="lazy"
                             />
                             <div className="timeline-month-copy">
-                              <h3 data-timeline-period-label>{month.label}</h3>
+                              <h3 data-timeline-period-label>{monthLabel}</h3>
                               <span>{photoCountLabel(month.photoCount)}</span>
                             </div>
                           </a>
                         </article>
-                      ))}
+                        );
+                      })}
                     </div>
                   ) : null}
                 </div>

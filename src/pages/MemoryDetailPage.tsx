@@ -292,6 +292,12 @@ export function MemoryDetailPage({
           ],
         });
 
+      await queryClient.invalidateQueries({
+        queryKey: [
+          'timeline',
+        ],
+      });
+
       setUpdatedAssetId(
         asset.id,
       );
@@ -398,6 +404,12 @@ export function MemoryDetailPage({
             'memories',
           ],
         });
+
+      await queryClient.invalidateQueries({
+        queryKey: [
+          'timeline',
+        ],
+      });
 
       if (
         response.deletedMemory
