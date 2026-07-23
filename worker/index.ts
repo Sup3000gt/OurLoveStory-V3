@@ -20,9 +20,16 @@ import {
 } from './lib/image-routes';
 import { normalizeMemoryPageSize } from './lib/memory-pagination';
 import {
+  clearTimelineCover,
+  listTimeline,
+  setTimelineCover,
+} from './lib/timeline';
+import { parseTimelineCoverInput } from './lib/timeline-validation';
+import {
   handleError,
   json,
   methodNotAllowed,
+  noContent,
   notFound,
 } from './lib/responses';
 import {
@@ -99,6 +106,31 @@ export default {
           await authorizeUploads(request, env, owner),
           { status: 201 },
         );
+      }
+
+      if (url.pathname === '/api/timeline') {
+        return request.method === 'GET'
+          ? json(await listTimeline(env))
+          : methodNotAllowed(['GET']);
+      }
+
+      if (url.pathname === '/api/timeline/covers') {
+        if (request.method === 'PUT') {
+          const owner = await requireOwner(request, env);
+          const input = parseTimelineCoverInput(await request.json());
+          return json(await setTimelineCover(env, owner, input));
+        }
+        if (request.method === 'DELETE') {
+          await requireOwner(request, env);
+          const { periodType, periodKey } = parseTimelineCoverInput({
+            periodType: url.searchParams.get('periodType'),
+            periodKey: url.searchParams.get('periodKey'),
+            assetId: 'timeline-cover-clear',
+          });
+          await clearTimelineCover(env, periodType, periodKey);
+          return noContent();
+        }
+        return methodNotAllowed(['PUT', 'DELETE']);
       }
 
       if (url.pathname === '/api/memories') {

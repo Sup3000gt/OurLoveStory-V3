@@ -1,8 +1,10 @@
 import type {
+  TimelineCoverInput,
   TimelinePhoto,
   TimelineResponse,
 } from '../../shared/contracts';
-import type { Env } from '../env';
+import type { Env, OwnerIdentity } from '../env';
+import { ValidationError } from './validation';
 
 const MONTH_LABELS = [
   'January',
@@ -44,6 +46,11 @@ interface TimelinePhotoDatabaseRow {
 interface ExplicitCoverDatabaseRow extends TimelinePhotoDatabaseRow {
   period_type: 'year' | 'month';
   period_key: string;
+}
+
+interface EligibleTimelineCoverRow {
+  memory_id: string;
+  memory_date: string;
 }
 
 export async function listTimeline(env: Env): Promise<TimelineResponse> {
@@ -135,6 +142,65 @@ export async function listTimeline(env: Env): Promise<TimelineResponse> {
   };
 }
 
+export async function setTimelineCover(
+  env: Env,
+  owner: OwnerIdentity,
+  input: TimelineCoverInput,
+): Promise<TimelineCoverInput> {
+  const selected = await env.DB.prepare(`
+    SELECT
+      a.memory_id,
+      m.taken_at AS memory_date
+    FROM media_assets a
+    INNER JOIN memories m ON m.id = a.memory_id
+    WHERE a.id = ?
+      AND a.media_type = 'image'
+      AND a.visibility = 'public'
+      AND m.status = 'published'
+    LIMIT 1
+  `).bind(input.assetId).first<EligibleTimelineCoverRow>();
+
+  if (!selected || !matchesTimelinePeriod(
+    selected.memory_date,
+    input.periodType,
+    input.periodKey,
+  )) {
+    throw new ValidationError(
+      'Timeline cover must be a public image from a published memory in the selected period.',
+    );
+  }
+
+  await env.DB.prepare(`
+    INSERT INTO timeline_covers (
+      id, period_type, period_key, memory_id, asset_id, created_by
+    ) VALUES (?, ?, ?, ?, ?, ?)
+    ON CONFLICT(period_type, period_key) DO UPDATE SET
+      memory_id = excluded.memory_id,
+      asset_id = excluded.asset_id,
+      updated_at = CURRENT_TIMESTAMP
+  `).bind(
+    crypto.randomUUID(),
+    input.periodType,
+    input.periodKey,
+    selected.memory_id,
+    input.assetId,
+    owner.userId,
+  ).run();
+
+  return input;
+}
+
+export async function clearTimelineCover(
+  env: Env,
+  periodType: TimelineCoverInput['periodType'],
+  periodKey: string,
+): Promise<void> {
+  await env.DB.prepare(`
+    DELETE FROM timeline_covers
+    WHERE period_type = ? AND period_key = ?
+  `).bind(periodType, periodKey).run();
+}
+
 export function selectTimelineCover(
   photos: TimelinePhotoRow[],
   explicitCover: TimelinePhotoRow | null,
@@ -173,4 +239,14 @@ function toPhotoRow(row: TimelinePhotoDatabaseRow): TimelinePhotoRow {
     filename: row.filename,
     sortOrder: row.sort_order,
   };
+}
+
+function matchesTimelinePeriod(
+  date: string,
+  periodType: TimelineCoverInput['periodType'],
+  periodKey: string,
+): boolean {
+  return periodType === 'year'
+    ? date.slice(0, 4) === periodKey
+    : date.slice(0, 7) === periodKey;
 }
