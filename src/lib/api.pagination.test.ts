@@ -52,6 +52,29 @@ describe('getMemories pagination', () => {
     );
   });
 
+  it('passes a month filter to the memory page endpoint', async () => {
+    const page = {
+      memories: [],
+      nextCursor: null,
+    };
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify(page), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      }),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(
+      getMemories(undefined, { month: '2026-04', limit: 12 }),
+    ).resolves.toEqual(page);
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/memories?limit=12&month=2026-04',
+      expect.objectContaining({ credentials: 'same-origin' }),
+    );
+  });
+
   it('can load a memory directly when it is not in the current page', async () => {
     const memory = { id: 'memory/a' };
     const fetchMock = vi.fn().mockResolvedValue(

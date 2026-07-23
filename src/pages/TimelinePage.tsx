@@ -2,7 +2,7 @@ import { TimelinePhoto } from '../components/TimelinePhoto';
 import { useTimeline } from '../hooks/useTimeline';
 import { timelineMonthTranslationKeys } from '../i18n/translations';
 import { useTranslation } from '../i18n/useTranslation';
-import { timelineCoverHref } from '../lib/timeline';
+import { timelineCoverHref, timelineMonthArchiveHref } from '../lib/timeline';
 
 export function TimelinePage() {
   const { data: timeline, error, isLoading } = useTimeline();
@@ -68,6 +68,12 @@ export function TimelinePage() {
                               <h3 data-timeline-period-label>{monthLabel}</h3>
                               <span>{photoCountLabel(month.photoCount)}</span>
                             </div>
+                          </a>
+                          <a
+                            className="timeline-month-archive-link"
+                            href={timelineMonthArchiveHref(month.key)}
+                          >
+                            {t('timeline.viewMonth')}
                           </a>
                         </article>
                         );

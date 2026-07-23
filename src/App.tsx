@@ -37,6 +37,9 @@ import {
   TimelinePage,
 } from './pages/TimelinePage';
 import {
+  TimelineMonthPage,
+} from './pages/TimelineMonthPage';
+import {
   UploadSessionReviewPage,
 } from './pages/UploadSessionReviewPage';
 import './styles/global.css';
@@ -156,6 +159,11 @@ export default function App() {
           <Route
             path="/timeline"
             element={<TimelinePage />}
+          />
+
+          <Route
+            path="/timeline/:monthKey"
+            element={<TimelineMonthPage />}
           />
 
           <Route

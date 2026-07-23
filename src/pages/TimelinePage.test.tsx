@@ -155,6 +155,11 @@ describe('TimelinePage', () => {
       '/memory/memory-april?asset=asset-april',
       '/memory/memory-older?asset=asset-older',
     ]);
+    expect(Array.from(page.querySelectorAll<HTMLAnchorElement>('.timeline-month-archive-link'))
+      .map((link) => link.getAttribute('href'))).toEqual([
+        '/timeline/2025-05',
+        '/timeline/2025-04',
+      ]);
     expect(page.textContent).not.toContain('Birthday');
     expect(page.textContent).not.toContain('Should not appear');
     expect(page.textContent).not.toContain('Rainy afternoon');

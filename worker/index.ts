@@ -146,6 +146,7 @@ export default {
               limit: normalizeMemoryPageSize(url.searchParams.get('limit')),
               cursor: url.searchParams.get('cursor'),
               category: url.searchParams.get('category'),
+              month: url.searchParams.get('month'),
             },
           ));
         }

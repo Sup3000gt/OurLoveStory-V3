@@ -11,8 +11,27 @@ export interface TimelinePeriod {
   cover: TimelinePhoto;
 }
 
+export interface TimelineMonthParts {
+  year: string;
+  month: number;
+}
+
 export function timelineCoverHref(photo: TimelinePhoto): string {
   return `/memory/${encodeURIComponent(photo.memoryId)}?asset=${encodeURIComponent(photo.assetId)}`;
+}
+
+export function timelineMonthArchiveHref(monthKey: string): string {
+  return `/timeline/${encodeURIComponent(monthKey)}`;
+}
+
+export function parseTimelineMonthKey(monthKey: string): TimelineMonthParts | null {
+  const match = /^(\d{4})-(0[1-9]|1[0-2])$/.exec(monthKey);
+  if (!match) return null;
+
+  return {
+    year: match[1]!,
+    month: Number(match[2]),
+  };
 }
 
 export function timelinePeriods(

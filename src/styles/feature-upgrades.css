@@ -1032,6 +1032,30 @@
   font-weight: 600;
 }
 
+.timeline-month-archive-link {
+  display: block;
+  padding: 10px 12px 12px;
+  border-top: 1px solid var(--line);
+  color: var(--rose-deep);
+  font-size: 10px;
+  letter-spacing: .08em;
+  text-decoration: none;
+}
+
+.timeline-month-archive-link:hover,
+.timeline-month-archive-link:focus-visible {
+  background: rgba(201, 130, 120, .08);
+  text-decoration: underline;
+}
+
+.timeline-month-back {
+  margin-bottom: 24px;
+}
+
+.timeline-month-page .memory-grid {
+  margin-top: 40px;
+}
+
 @media (max-width: 620px) {
   .gallery-pagination {
     gap: 10px;

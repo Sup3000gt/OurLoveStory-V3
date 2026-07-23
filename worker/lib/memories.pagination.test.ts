@@ -94,6 +94,24 @@ describe('listMemories pagination', () => {
     expect(secondPage.memories.map((memory) => memory.id)).toEqual(['memory-food-2']);
     expect(secondPage.nextCursor).toBeNull();
   });
+
+  it('returns only public memories from the requested month', async () => {
+    await insertMemory('memory-april-1', '2026-04-20', 'april-1', 'public');
+    await insertMemory('memory-april-2', '2026-04-08', 'april-2', 'public');
+    await insertMemory('memory-april-private', '2026-04-05', 'april-private', 'private');
+    await insertMemory('memory-may', '2026-05-01', 'may-1', 'public');
+
+    const page = await listMemories(env, false, {
+      month: '2026-04',
+      limit: 10,
+    });
+
+    expect(page.memories.map((memory) => memory.id)).toEqual([
+      'memory-april-1',
+      'memory-april-2',
+    ]);
+    expect(page.nextCursor).toBeNull();
+  });
 });
 
 async function insertMemory(

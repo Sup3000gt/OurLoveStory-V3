@@ -89,6 +89,7 @@ interface ListMemoriesOptions {
   limit: number;
   cursor?: string | null;
   category?: string | null;
+  month?: string | null;
 }
 
 export async function listMemories(
@@ -99,8 +100,12 @@ export async function listMemories(
   const limit = Math.min(MAX_MEMORY_PAGE_SIZE, Math.max(1, Math.floor(options.limit)));
   const cursor = options.cursor ? decodeMemoryCursor(options.cursor) : null;
   const category = options.category || null;
+  const month = options.month || null;
   if (category && !MEMORY_CATEGORIES.includes(category as Memory['category'])) {
     throw new ValidationError('Invalid memory category.');
+  }
+  if (month && !/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) {
+    throw new ValidationError('Invalid memory month.');
   }
   if (options.cursor && !cursor) {
     throw new ValidationError('Invalid memory cursor.');
@@ -129,8 +134,10 @@ export async function listMemories(
       )`
     : '';
   const categoryClause = category ? 'AND page.category = ?' : '';
+  const monthClause = month ? 'AND page.taken_at LIKE ?' : '';
   const bindings: unknown[] = [];
   if (category) bindings.push(category);
+  if (month) bindings.push(`${month}-%`);
   if (cursor) {
     bindings.push(
       cursor.takenAt,
@@ -149,6 +156,7 @@ export async function listMemories(
       FROM memories page
       WHERE ${pageAccessClause}
       ${categoryClause}
+      ${monthClause}
       ${cursorClause}
       ORDER BY page.taken_at DESC, page.created_at DESC, page.id DESC
       LIMIT ?

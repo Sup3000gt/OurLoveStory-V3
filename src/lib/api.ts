@@ -39,6 +39,7 @@ export interface MemoryPageOptions {
   cursor?: string | null;
   limit?: number;
   category?: Memory['category'] | null;
+  month?: string | null;
 }
 
 export class ApiRequestError extends Error {
@@ -106,6 +107,7 @@ export async function getMemories(
   });
   if (options.cursor) params.set('cursor', options.cursor);
   if (options.category) params.set('category', options.category);
+  if (options.month) params.set('month', options.month);
 
   return await apiRequest<MemoryPage>(
     `/memories?${params.toString()}`,

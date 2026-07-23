@@ -3,8 +3,10 @@ import type { TimelinePhoto, TimelineResponse } from '../../shared/contracts';
 import {
   formatTimelinePhotoCount,
   timelineCoverHref,
+  timelineMonthArchiveHref,
   timelinePeriods,
   timelinePreviewClass,
+  parseTimelineMonthKey,
 } from './timeline';
 
 const photo: TimelinePhoto = {
@@ -24,6 +26,13 @@ describe('timeline presentation helpers', () => {
     expect(timelineCoverHref(photo)).toBe(
       '/memory/memory%20%2F%20one?asset=asset%20%26%20one',
     );
+  });
+
+  it('builds a month archive link and rejects invalid month keys', () => {
+    expect(timelineMonthArchiveHref('2026-04')).toBe('/timeline/2026-04');
+    expect(parseTimelineMonthKey('2026-04')).toEqual({ year: '2026', month: 4 });
+    expect(parseTimelineMonthKey('2026-13')).toBeNull();
+    expect(parseTimelineMonthKey('April 2026')).toBeNull();
   });
 
   it('flattens server groups into display periods without mutating the response', () => {
