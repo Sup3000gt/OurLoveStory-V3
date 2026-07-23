@@ -20,6 +20,8 @@ import {
   MAX_MEMORY_PAGE_SIZE,
   type MemoryCursor,
 } from './memory-pagination';
+import type { MemoryFacets } from '../../shared/memory-discovery';
+import { memoryDateRange, memorySearchPattern } from './memory-filters';
 import { HttpError, noContent, notFound } from './responses';
 import {
   assertOwnedObjectKey,
@@ -88,8 +90,19 @@ interface ObjectKeyRow {
 interface ListMemoriesOptions {
   limit: number;
   cursor?: string | null;
+  query?: string | null;
   category?: string | null;
-  month?: string | null;
+  year?: string | null;
+  month?: number | null;
+}
+
+interface MemoryCountRow {
+  total_count: number;
+}
+
+interface MemoryFacetRow {
+  year: number;
+  month: number;
 }
 
 export async function listMemories(
@@ -99,12 +112,17 @@ export async function listMemories(
 ): Promise<MemoryPage> {
   const limit = Math.min(MAX_MEMORY_PAGE_SIZE, Math.max(1, Math.floor(options.limit)));
   const cursor = options.cursor ? decodeMemoryCursor(options.cursor) : null;
+  const query = options.query || null;
   const category = options.category || null;
-  const month = options.month || null;
+  const year = options.year || null;
+  const month = options.month ?? null;
   if (category && !MEMORY_CATEGORIES.includes(category as Memory['category'])) {
     throw new ValidationError('Invalid memory category.');
   }
-  if (month && !/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) {
+  if (year && !/^\d{4}$/.test(year)) {
+    throw new ValidationError('Invalid memory year.');
+  }
+  if (month !== null && (!Number.isInteger(month) || month < 1 || month > 12 || !year)) {
     throw new ValidationError('Invalid memory month.');
   }
   if (options.cursor && !cursor) {
@@ -133,11 +151,33 @@ export async function listMemories(
         )
       )`
     : '';
-  const categoryClause = category ? 'AND page.category = ?' : '';
-  const monthClause = month ? 'AND page.taken_at LIKE ?' : '';
-  const bindings: unknown[] = [];
-  if (category) bindings.push(category);
-  if (month) bindings.push(`${month}-%`);
+  const searchPattern = memorySearchPattern(query);
+  const { start, end } = memoryDateRange({
+    query,
+    category: category as Memory['category'] | null,
+    year,
+    month,
+  });
+  const filterClauses: string[] = [];
+  const filterBindings: unknown[] = [];
+  if (searchPattern) {
+    filterClauses.push(`AND (
+      page.title LIKE ? ESCAPE '\\' COLLATE NOCASE
+      OR page.location LIKE ? ESCAPE '\\' COLLATE NOCASE
+      OR page.description LIKE ? ESCAPE '\\' COLLATE NOCASE
+    )`);
+    filterBindings.push(searchPattern, searchPattern, searchPattern);
+  }
+  if (category) {
+    filterClauses.push('AND page.category = ?');
+    filterBindings.push(category);
+  }
+  if (start && end) {
+    filterClauses.push('AND page.taken_at >= ? AND page.taken_at < ?');
+    filterBindings.push(start, end);
+  }
+  const filterClause = filterClauses.join('\n');
+  const bindings = [...filterBindings];
   if (cursor) {
     bindings.push(
       cursor.takenAt,
@@ -155,8 +195,7 @@ export async function listMemories(
       SELECT page.id
       FROM memories page
       WHERE ${pageAccessClause}
-      ${categoryClause}
-      ${monthClause}
+      ${filterClause}
       ${cursorClause}
       ORDER BY page.taken_at DESC, page.created_at DESC, page.id DESC
       LIMIT ?
@@ -188,6 +227,13 @@ export async function listMemories(
     ORDER BY m.taken_at DESC, m.created_at DESC, m.id DESC, a.sort_order ASC
   `).bind(...bindings).all<JoinedMemoryRow>();
 
+  const countResult = await env.DB.prepare(`
+    SELECT COUNT(DISTINCT page.id) AS total_count
+    FROM memories page
+    WHERE ${pageAccessClause}
+    ${filterClause}
+  `).bind(...filterBindings).first<MemoryCountRow>();
+
   const aggregated = aggregateMemories(result.results, isOwner);
   const hasNextPage = aggregated.length > limit;
   const memories = aggregated.slice(0, limit);
@@ -203,7 +249,35 @@ export async function listMemories(
   return {
     memories,
     nextCursor: nextCursor ? encodeMemoryCursor(nextCursor) : null,
-    totalCount: 0,
+    totalCount: countResult?.total_count ?? 0,
+  };
+}
+
+export async function listMemoryFacets(env: Env, isOwner: boolean): Promise<MemoryFacets> {
+  const pageAccessClause = isOwner
+    ? '1 = 1'
+    : `page.status = 'published' AND EXISTS (
+        SELECT 1
+        FROM media_assets visible_asset
+        WHERE visible_asset.memory_id = page.id
+          AND visible_asset.visibility = 'public'
+      )`;
+  const result = await env.DB.prepare(`
+    SELECT DISTINCT
+      CAST(substr(page.taken_at, 1, 4) AS INTEGER) AS year,
+      CAST(substr(page.taken_at, 6, 2) AS INTEGER) AS month
+    FROM memories page
+    WHERE ${pageAccessClause}
+    ORDER BY year ASC, month ASC
+  `).all<MemoryFacetRow>();
+  const years = new Map<number, number[]>();
+  for (const row of result.results) {
+    const months = years.get(row.year) ?? [];
+    months.push(row.month);
+    years.set(row.year, months);
+  }
+  return {
+    years: [...years.entries()].map(([year, months]) => ({ year, months })),
   };
 }
 

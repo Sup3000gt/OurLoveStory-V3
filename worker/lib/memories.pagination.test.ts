@@ -102,7 +102,8 @@ describe('listMemories pagination', () => {
     await insertMemory('memory-may', '2026-05-01', 'may-1', 'public');
 
     const page = await listMemories(env, false, {
-      month: '2026-04',
+      year: '2026',
+      month: 4,
       limit: 10,
     });
 
@@ -112,6 +113,47 @@ describe('listMemories pagination', () => {
     ]);
     expect(page.nextCursor).toBeNull();
   });
+
+  it('filters title, location, and description and returns totalCount', async () => {
+    await insertMemory('memory-korean-title', '2026-05-20', 'korean-title', 'public', 'Dining Out', {
+      title: '五月韩餐',
+    });
+    await insertMemory('memory-korean-location', '2026-05-19', 'korean-location', 'public', 'Dining Out', {
+      location: '韩餐街',
+    });
+    await insertMemory('memory-korean-description', '2026-05-18', 'korean-description', 'public', 'Dining Out', {
+      description: '一起吃韩餐',
+    });
+
+    const page = await listMemories(env, false, {
+      limit: 10,
+      query: '韩餐',
+      category: null,
+      year: '2026',
+      month: 5,
+    });
+
+    expect(page.memories.map((memory) => memory.title)).toEqual([
+      '五月韩餐',
+      'memory-korean-location',
+      'memory-korean-description',
+    ]);
+    expect(page.totalCount).toBe(3);
+  });
+
+  it('does not expose private-only memories to a guest', async () => {
+    await insertMemory('memory-private-search', '2026-05-17', 'private-search', 'private', 'Daily Life', {
+      title: 'private memory',
+    });
+
+    const page = await listMemories(env, false, {
+      limit: 10,
+      query: 'private',
+    });
+
+    expect(page.memories).toEqual([]);
+    expect(page.totalCount).toBe(0);
+  });
 });
 
 async function insertMemory(
@@ -120,13 +162,22 @@ async function insertMemory(
   assetId: string,
   assetVisibility: 'public' | 'private',
   category: 'Travel' | 'Daily Life' | 'Homemade Food' | 'Dining Out' | 'Special Moments' = 'Travel',
+  values: { title?: string; location?: string; description?: string } = {},
 ): Promise<void> {
   await db.prepare(`
     INSERT INTO memories (
       id, title, description, location, taken_at, category, visibility,
       is_featured, status, cover_asset_id, created_by
-    ) VALUES (?, ?, '', '', ?, ?,  'private', 0, 'published', ?, 'owner-1')
-  `).bind(id, id, takenAt, category, assetId).run();
+    ) VALUES (?, ?, ?, ?, ?, ?, 'private', 0, 'published', ?, 'owner-1')
+  `).bind(
+    id,
+    values.title ?? id,
+    values.description ?? '',
+    values.location ?? '',
+    takenAt,
+    category,
+    assetId,
+  ).run();
   await db.prepare(`
     INSERT INTO media_assets (
       id, memory_id, media_type, object_key, original_filename,

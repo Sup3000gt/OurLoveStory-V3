@@ -9,6 +9,7 @@ import {
   deleteAsset,
   deleteMemory,
   getMemory,
+  listMemoryFacets,
   listMemories,
   serveAsset,
   updateAssetVisibility,
@@ -19,6 +20,7 @@ import {
   matchImageRoute,
 } from './lib/image-routes';
 import { normalizeMemoryPageSize } from './lib/memory-pagination';
+import { parseMemoryDiscoveryFilters } from '../shared/memory-discovery';
 import {
   clearTimelineCover,
   listTimeline,
@@ -133,8 +135,15 @@ export default {
         return methodNotAllowed(['PUT', 'DELETE']);
       }
 
+      if (url.pathname === '/api/memories/facets') {
+        if (request.method !== 'GET') return methodNotAllowed(['GET']);
+        const owner = await optionalOwner(request, env);
+        return json(await listMemoryFacets(env, Boolean(owner)));
+      }
+
       if (url.pathname === '/api/memories') {
         if (request.method === 'GET') {
+          const filters = parseMemoryDiscoveryFilters(url.searchParams);
           const owner = await optionalOwner(
             request,
             env,
@@ -145,8 +154,10 @@ export default {
             {
               limit: normalizeMemoryPageSize(url.searchParams.get('limit')),
               cursor: url.searchParams.get('cursor'),
-              category: url.searchParams.get('category'),
-              month: url.searchParams.get('month'),
+              query: filters.query,
+              category: filters.category,
+              year: filters.year,
+              month: filters.month,
             },
           ));
         }
