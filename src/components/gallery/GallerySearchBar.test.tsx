@@ -79,4 +79,41 @@ describe('GallerySearchBar', () => {
     expect(input.value).toBe('正在输入');
     expect(input.maxLength).toBe(80);
   });
+
+  it('uses the latest change callback after a parent rerender during debounce', async () => {
+    const initialOnChange = vi.fn();
+    const latestOnChange = vi.fn();
+    container = document.createElement('div');
+    document.body.append(container);
+    root = createRoot(container);
+
+    act(() => root?.render(
+      <LanguageProvider>
+        <GallerySearchBar value="" onChange={initialOnChange} onClear={vi.fn()} />
+      </LanguageProvider>,
+    ));
+
+    const input = container.querySelector('input[type="search"]') as HTMLInputElement;
+    act(() => {
+      const setValue = Object.getOwnPropertyDescriptor(
+        HTMLInputElement.prototype,
+        'value',
+      )?.set;
+      setValue?.call(input, '韩餐');
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+
+    act(() => root?.render(
+      <LanguageProvider>
+        <GallerySearchBar value="" onChange={latestOnChange} onClear={vi.fn()} />
+      </LanguageProvider>,
+    ));
+
+    await act(async () => {
+      await new Promise((resolve) => window.setTimeout(resolve, 350));
+    });
+
+    expect(initialOnChange).not.toHaveBeenCalled();
+    expect(latestOnChange).toHaveBeenLastCalledWith('韩餐');
+  });
 });

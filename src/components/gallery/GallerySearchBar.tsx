@@ -14,12 +14,15 @@ export function GallerySearchBar({ value, onChange, onClear }: GallerySearchBarP
   const { t } = useTranslation();
   const inputRef = useRef<HTMLInputElement>(null);
   const timeoutRef = useRef<number | undefined>(undefined);
+  const onChangeRef = useRef(onChange);
   const lastCommittedValueRef = useRef(value);
   const [draftValue, setDraftValue] = useState(value);
+  onChangeRef.current = onChange;
 
   useEffect(() => {
     if (value === lastCommittedValueRef.current) return;
     lastCommittedValueRef.current = value;
+    if (timeoutRef.current !== undefined) window.clearTimeout(timeoutRef.current);
     setDraftValue(value);
   }, [value]);
 
@@ -30,7 +33,7 @@ export function GallerySearchBar({ value, onChange, onClear }: GallerySearchBarP
   function handleChange(nextValue: string) {
     setDraftValue(nextValue);
     if (timeoutRef.current !== undefined) window.clearTimeout(timeoutRef.current);
-    timeoutRef.current = window.setTimeout(() => onChange(nextValue), SEARCH_DEBOUNCE_MS);
+    timeoutRef.current = window.setTimeout(() => onChangeRef.current(nextValue), SEARCH_DEBOUNCE_MS);
   }
 
   function handleClear() {

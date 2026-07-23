@@ -51,6 +51,10 @@ describe('gallery filters', () => {
     });
   });
 
+  it('trims a valid category from URL state before validating it', () => {
+    expect(parseGallerySearch('?category=Dining+Out+').category).toBe('Dining Out');
+  });
+
   it('omits default filters from the URL', () => {
     expect(toGallerySearch({
       query: '',

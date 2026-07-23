@@ -48,9 +48,10 @@ function sanitizeGallerySearchInput(input: {
 }) {
   const query = input.query?.trim().replace(/\s+/g, ' ') ?? null;
   const safeQuery = query && query.length <= MAX_MEMORY_SEARCH_LENGTH ? query : null;
-  const category = input.category === 'All'
-    || (input.category !== null && MEMORY_CATEGORIES.includes(input.category as Memory['category']))
-    ? input.category
+  const categoryValue = input.category?.trim() ?? null;
+  const category = categoryValue === 'All'
+    || (categoryValue !== null && MEMORY_CATEGORIES.includes(categoryValue as Memory['category']))
+    ? categoryValue
     : null;
   const year = input.year && /^\d{4}$/.test(input.year.trim())
     ? input.year.trim()
