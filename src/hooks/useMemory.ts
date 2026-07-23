@@ -7,10 +7,10 @@ export function useMemory(
   memoryId: string | undefined,
   initialMemory: Memory | undefined,
 ) {
-  const { isLoaded, isSignedIn, getToken } = useAuth();
+  const { isLoaded, isSignedIn, userId, getToken } = useAuth();
 
   return useQuery({
-    queryKey: ['memory', memoryId, isSignedIn],
+    queryKey: ['memory', memoryId, isSignedIn, userId],
     queryFn: () => getMemory(
       memoryId!,
       isSignedIn ? getToken : undefined,

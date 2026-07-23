@@ -17,12 +17,13 @@ export function useUploadSession(
   sessionId: string | undefined,
   enabled: boolean,
 ) {
-  const { getToken } = useAuth();
+  const { userId, getToken } = useAuth();
 
   return useQuery({
-    queryKey: uploadSessionQueryKey(
-      sessionId ?? '',
-    ),
+    queryKey: [
+      ...uploadSessionQueryKey(sessionId ?? ''),
+      userId,
+    ],
     queryFn: () =>
       getUploadSession(
         sessionId!,

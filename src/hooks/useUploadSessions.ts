@@ -14,10 +14,10 @@ export const uploadSessionsQueryKey = [
 export function useUploadSessions(
   enabled: boolean,
 ) {
-  const { getToken } = useAuth();
+  const { userId, getToken } = useAuth();
 
   return useQuery({
-    queryKey: uploadSessionsQueryKey,
+    queryKey: [...uploadSessionsQueryKey, userId],
     queryFn: () =>
       listUploadSessions(getToken),
     enabled,
