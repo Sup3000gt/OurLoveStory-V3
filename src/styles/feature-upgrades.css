@@ -897,8 +897,8 @@
 
 .gallery-layout {
   display: grid;
-  grid-template-columns: minmax(260px, 280px) minmax(0, 1fr);
-  gap: 24px;
+  grid-template-columns: 140px minmax(0, 1fr);
+  gap: 20px;
   max-width: 1180px;
   margin: 28px auto 0;
   align-items: start;
@@ -985,6 +985,26 @@
 }
 
 @media (min-width: 901px) {
+  .gallery-layout .gallery-discovery-panel {
+    gap: 12px;
+    padding: 12px;
+  }
+
+  .gallery-discovery-sidebar > .gallery-search input {
+    padding-inline: 6px;
+    font-size: 9px;
+  }
+
+  .gallery-discovery-sidebar > .gallery-desktop-filters .gallery-category-chips--expanded button {
+    min-width: 0;
+    padding-inline: 8px;
+  }
+
+  .gallery-discovery-sidebar > .gallery-desktop-filters .gallery-date-filters {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
   .gallery-grid-state--tall-cards .memory-grid-masonry .memory-image-wrap {
     aspect-ratio: 4 / 5;
     overflow: hidden;
