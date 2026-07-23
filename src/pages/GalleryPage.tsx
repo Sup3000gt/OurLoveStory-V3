@@ -5,8 +5,13 @@ import { ActiveFilterSummary } from '../components/gallery/ActiveFilterSummary';
 import { GalleryFilters } from '../components/gallery/GalleryFilters';
 import { GallerySearchBar } from '../components/gallery/GallerySearchBar';
 import { MobileFilterSheet } from '../components/gallery/MobileFilterSheet';
+import { ShareLinkButton } from '../components/ShareLinkButton';
 import { useTranslation } from '../i18n/useTranslation';
-import { hasActiveGalleryFilters, type GalleryFilterState } from '../lib/gallery-filters';
+import {
+  hasActiveGalleryFilters,
+  toGallerySearch,
+  type GalleryFilterState,
+} from '../lib/gallery-filters';
 
 interface GalleryPageProps {
   memories: Memory[];
@@ -49,6 +54,7 @@ export function GalleryPage({
 }: GalleryPageProps) {
   const { t } = useTranslation();
   const hasActiveFilters = hasActiveGalleryFilters(filters);
+  const galleryUrl = window.location.origin + '/gallery' + toGallerySearch(filters);
 
   return (
     <main className="page-shell">
@@ -72,6 +78,16 @@ export function GalleryPage({
           />
         </div>
         <MobileFilterSheet state={filters} facets={facets} onApply={onFiltersChange} />
+        <div className="gallery-share-actions">
+          <ShareLinkButton
+            title={t('gallery.title')}
+            url={galleryUrl}
+            label={t('share.label')}
+            copiedLabel={t('share.copied')}
+            fallbackLabel={t('share.manual')}
+          />
+          {isOwner && hasActiveFilters ? <p>{t('gallery.publicShareHint')}</p> : null}
+        </div>
       </section>
       <ActiveFilterSummary state={filters} facets={facets} totalCount={totalCount} />
       {isLoading ? <div className="gallery-status">{t('gallery.loading')}</div> : null}

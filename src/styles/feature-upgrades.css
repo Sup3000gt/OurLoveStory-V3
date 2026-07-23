@@ -894,6 +894,67 @@
   box-shadow: 0 10px 30px rgba(79, 52, 42, .05);
 }
 
+.gallery-share-actions,
+.timeline-period-actions,
+.timeline-month-heading,
+.share-link-control {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.gallery-share-actions {
+  justify-content: space-between;
+}
+
+.gallery-share-actions p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.timeline-period-actions {
+  justify-content: flex-end;
+}
+
+.timeline-month-heading {
+  justify-content: center;
+}
+
+.timeline-month-heading h1 {
+  margin: 8px;
+}
+
+.share-link-button {
+  min-height: 36px;
+  padding: 7px 11px;
+  font-size: 11px;
+}
+
+.share-link-button:focus-visible,
+.share-link-manual input:focus-visible {
+  outline: 3px solid rgba(168, 95, 88, .32);
+  outline-offset: 2px;
+}
+
+.share-link-manual {
+  display: grid;
+  gap: 4px;
+  width: min(100%, 440px);
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.share-link-manual input {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  color: var(--ink);
+  background: #fffdf9;
+}
+
 .gallery-search {
   position: relative;
   display: flex;

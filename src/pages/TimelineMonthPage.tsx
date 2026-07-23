@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { GalleryGrid } from '../components/GalleryGrid';
+import { ShareLinkButton } from '../components/ShareLinkButton';
 import { TimelineMonthNavigator } from '../components/TimelineMonthNavigator';
 import { useTimeline } from '../hooks/useTimeline';
 import { timelineMonthTranslationKeys } from '../i18n/translations';
@@ -57,7 +58,18 @@ export function TimelineMonthPage() {
       </a>
       <header className="page-intro">
         <p>{t('timeline.monthEyebrow')}</p>
-        <h1>{monthLabel}</h1>
+        <div className="timeline-month-heading">
+          <h1>{monthLabel}</h1>
+          {month ? (
+            <ShareLinkButton
+              title={monthLabel}
+              url={window.location.origin + '/timeline/' + monthKey}
+              label={t('share.label')}
+              copiedLabel={t('share.copied')}
+              fallbackLabel={t('share.manual')}
+            />
+          ) : null}
+        </div>
         <span>
           {month ? t('timeline.monthSubtitle') : t('timeline.invalidMonth')}
         </span>

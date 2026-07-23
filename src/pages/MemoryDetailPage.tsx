@@ -34,6 +34,7 @@ import type {
 } from '../../shared/contracts';
 import { DerivativeImage } from '../components/DerivativeImage';
 import { ImageLightbox } from '../components/ImageLightbox';
+import { ShareLinkButton } from '../components/ShareLinkButton';
 import {
   activeAppendSessionForMemory,
   useUploadSessions,
@@ -546,6 +547,14 @@ export function MemoryDetailPage({
           <h1>
             {memory.title}
           </h1>
+
+          <ShareLinkButton
+            title={memory.title}
+            url={window.location.origin + '/memory/' + encodeURIComponent(memory.id)}
+            label={t('share.label')}
+            copiedLabel={t('share.copied')}
+            fallbackLabel={t('share.manual')}
+          />
 
           {memory.status
             === 'draft' ? (

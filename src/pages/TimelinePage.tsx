@@ -1,5 +1,6 @@
 import { TimelinePhoto } from '../components/TimelinePhoto';
 import { TimelineYearNav } from '../components/TimelineYearNav';
+import { ShareLinkButton } from '../components/ShareLinkButton';
 import { useTimeline } from '../hooks/useTimeline';
 import { timelineMonthTranslationKeys } from '../i18n/translations';
 import { useTranslation } from '../i18n/useTranslation';
@@ -40,7 +41,16 @@ export function TimelinePage() {
                   <div className="timeline-year-content">
                     <div className="timeline-period-heading">
                       <h2 data-timeline-period-label>{year.label}</h2>
-                      <span>{photoCountLabel(year.photoCount)}</span>
+                      <div className="timeline-period-actions">
+                        <span>{photoCountLabel(year.photoCount)}</span>
+                        <ShareLinkButton
+                          title={year.label}
+                          url={window.location.origin + '/timeline#year-' + year.key}
+                          label={t('share.label')}
+                          copiedLabel={t('share.copied')}
+                          fallbackLabel={t('share.manual')}
+                        />
+                      </div>
                     </div>
                     <article className="timeline-year-card">
                       <a className="timeline-cover-link" href={timelineCoverHref(year.cover)}>
