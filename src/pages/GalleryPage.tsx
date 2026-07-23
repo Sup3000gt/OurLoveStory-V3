@@ -70,7 +70,8 @@ export function GalleryPage({
         <h1>{t('gallery.title')}</h1>
         <span>{t('gallery.subtitle')}</span>
       </header>
-      <section className="gallery-discovery-panel">
+      <div className="gallery-layout">
+        <section className="gallery-discovery-panel gallery-discovery-sidebar">
         <GallerySearchBar
           value={filters.query}
           onChange={(query) => onFiltersChange({ ...filters, query }, { replace: true })}
@@ -95,62 +96,65 @@ export function GalleryPage({
           />
           {isOwner && hasActiveFilters ? <p>{t('gallery.publicShareHint')}</p> : null}
         </div>
-      </section>
-      <ActiveFilterSummary state={filters} facets={facets} totalCount={totalCount} />
-      {isLoading && memories.length === 0 ? <div className="gallery-status">{t('gallery.loading')}</div> : null}
-      {error ? (
-        <div className="gallery-status error gallery-error-status">
-          <span>{t('gallery.loadError')}</span>
-          <button className="secondary-button" type="button" onClick={onRetry}>
-            {t('gallery.retry')}
-          </button>
-        </div>
-      ) : null}
-      {!isLoading && !error && memories.length === 0 ? (
-        <div className="gallery-status">
-          {hasActiveFilters ? t('gallery.noResults') : t('gallery.empty')}
-        </div>
-      ) : null}
-      {memories.length > 0 ? (
-        <div className="gallery-grid-state">
-          <GalleryGrid
-            memories={memories}
-            variant="masonry"
-            isOwner={isOwner}
-            prioritizeFirstTwo={currentPage === 1}
-          />
-          {isFetching && !error ? (
-            <div className="gallery-loading-veil" role="status">
-              {t('gallery.loading')}
+        </section>
+        <div className="gallery-results-column">
+          <ActiveFilterSummary state={filters} facets={facets} totalCount={totalCount} />
+          {isLoading && memories.length === 0 ? <div className="gallery-status">{t('gallery.loading')}</div> : null}
+          {error ? (
+            <div className="gallery-status error gallery-error-status">
+              <span>{t('gallery.loadError')}</span>
+              <button className="secondary-button" type="button" onClick={onRetry}>
+                {t('gallery.retry')}
+              </button>
             </div>
           ) : null}
+          {!isLoading && !error && memories.length === 0 ? (
+            <div className="gallery-status">
+              {hasActiveFilters ? t('gallery.noResults') : t('gallery.empty')}
+            </div>
+          ) : null}
+          {memories.length > 0 ? (
+            <div className="gallery-grid-state">
+              <GalleryGrid
+                memories={memories}
+                variant="masonry"
+                isOwner={isOwner}
+                prioritizeFirstTwo={currentPage === 1}
+              />
+              {isFetching && !error ? (
+                <div className="gallery-loading-veil" role="status">
+                  {t('gallery.loading')}
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+          {totalPages > 0 && (hasPreviousPage || hasNextPage) ? (
+            <nav className="gallery-pagination" aria-label={t('gallery.paginationLabel')}>
+              <button
+                className="secondary-button"
+                type="button"
+                onClick={onPreviousPage}
+                disabled={!hasPreviousPage || isFetchingPage}
+              >
+                {t('gallery.previousPage')}
+              </button>
+              <span aria-live="polite">
+                {t('gallery.page', { current: currentPage })}
+              </span>
+              <button
+                className="secondary-button"
+                type="button"
+                onClick={onNextPage}
+                disabled={!hasNextPage || isFetchingPage}
+                onFocus={onPrefetchNextPage}
+                onMouseEnter={onPrefetchNextPage}
+              >
+                {isFetchingPage ? t('gallery.loadingPage') : t('gallery.nextPage')}
+              </button>
+            </nav>
+          ) : null}
         </div>
-      ) : null}
-      {totalPages > 0 && (hasPreviousPage || hasNextPage) ? (
-        <nav className="gallery-pagination" aria-label={t('gallery.paginationLabel')}>
-          <button
-            className="secondary-button"
-            type="button"
-            onClick={onPreviousPage}
-            disabled={!hasPreviousPage || isFetchingPage}
-          >
-            {t('gallery.previousPage')}
-          </button>
-          <span aria-live="polite">
-            {t('gallery.page', { current: currentPage })}
-          </span>
-          <button
-            className="secondary-button"
-            type="button"
-            onClick={onNextPage}
-            disabled={!hasNextPage || isFetchingPage}
-            onFocus={onPrefetchNextPage}
-            onMouseEnter={onPrefetchNextPage}
-          >
-            {isFetchingPage ? t('gallery.loadingPage') : t('gallery.nextPage')}
-          </button>
-        </nav>
-      ) : null}
+      </div>
     </main>
   );
 }

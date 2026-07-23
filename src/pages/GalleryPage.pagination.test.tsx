@@ -19,6 +19,40 @@ describe('GalleryPage pagination', () => {
     container = undefined;
   });
 
+  it('places desktop filters beside the gallery results', () => {
+    container = document.createElement('div');
+    document.body.append(container);
+    root = createRoot(container);
+
+    act(() => root?.render(
+      <LanguageProvider>
+        <GalleryPage
+          memories={[]}
+          isLoading={false}
+          error={null}
+          isOwner={false}
+          filters={emptyGalleryFilterState}
+          facets={undefined}
+          totalCount={0}
+          currentPage={1}
+          totalPages={0}
+          hasPreviousPage={false}
+          hasNextPage={false}
+          isFetchingPage={false}
+          onPreviousPage={vi.fn()}
+          onNextPage={vi.fn()}
+          onFiltersChange={vi.fn()}
+          onClearFilters={vi.fn()}
+          onPrefetchNextPage={vi.fn()}
+        />
+      </LanguageProvider>,
+    ));
+
+    expect(container.querySelector('.gallery-layout')).not.toBeNull();
+    expect(container.querySelector('.gallery-discovery-sidebar')).not.toBeNull();
+    expect(container.querySelector('.gallery-results-column')).not.toBeNull();
+  });
+
   it('shows page navigation instead of appending a Load more list', () => {
     const previousPage = vi.fn();
     const nextPage = vi.fn();

@@ -895,6 +895,82 @@
   box-shadow: 0 10px 30px rgba(79, 52, 42, .05);
 }
 
+.gallery-layout {
+  display: grid;
+  grid-template-columns: minmax(230px, 280px) minmax(0, 1fr);
+  gap: 24px;
+  max-width: 1180px;
+  margin: 28px auto 0;
+  align-items: start;
+}
+
+.gallery-layout .gallery-discovery-panel {
+  max-width: none;
+  margin: 0;
+}
+
+.gallery-discovery-sidebar {
+  position: sticky;
+  top: 96px;
+}
+
+.gallery-results-column {
+  min-width: 0;
+}
+
+.gallery-results-column .gallery-result-summary {
+  max-width: none;
+  margin: 0 0 14px;
+}
+
+.gallery-discovery-sidebar .gallery-filter-toolbar {
+  grid-template-columns: 1fr;
+  grid-template-areas: none;
+  gap: 12px;
+}
+
+.gallery-discovery-sidebar .gallery-filter-toolbar .gallery-category-chips,
+.gallery-discovery-sidebar .gallery-filter-toolbar .gallery-date-filters,
+.gallery-discovery-sidebar .gallery-filter-toolbar .gallery-clear-filters {
+  grid-area: auto;
+}
+
+.gallery-discovery-sidebar .gallery-category-chips button {
+  flex: 1 1 calc(50% - 8px);
+  text-align: center;
+}
+
+.gallery-discovery-sidebar .gallery-date-filters {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  gap: 8px;
+  align-items: center;
+}
+
+.gallery-discovery-sidebar .gallery-date-filters select {
+  min-width: 0;
+  width: 100%;
+}
+
+.gallery-discovery-sidebar .gallery-clear-filters {
+  width: 100%;
+  text-align: center;
+}
+
+.gallery-discovery-sidebar .gallery-share-actions {
+  align-items: stretch;
+  flex-direction: column;
+}
+
+.gallery-discovery-sidebar .gallery-share-actions p {
+  margin-right: 0;
+}
+
+.gallery-discovery-sidebar .share-link-control,
+.gallery-discovery-sidebar .share-link-button {
+  width: 100%;
+}
+
 .gallery-share-actions,
 .timeline-period-actions,
 .timeline-month-heading,
@@ -1187,6 +1263,23 @@
 }
 
 @media (max-width: 900px) {
+  .gallery-layout {
+    display: block;
+    max-width: 720px;
+  }
+
+  .gallery-discovery-sidebar {
+    position: static;
+  }
+
+  .gallery-layout .gallery-discovery-panel {
+    margin: 20px auto 0;
+  }
+
+  .gallery-results-column .gallery-result-summary {
+    margin-top: 14px;
+  }
+
   .gallery-discovery-panel {
     max-width: 720px;
   }
@@ -1221,6 +1314,10 @@
     overflow-x: auto;
     padding-bottom: 4px;
     scrollbar-width: thin;
+  }
+
+  .gallery-discovery-sidebar .gallery-category-chips button {
+    flex: 0 0 auto;
   }
 
   .gallery-desktop-filters .gallery-date-filters,
