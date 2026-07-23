@@ -936,13 +936,22 @@
 }
 
 .gallery-discovery-sidebar .gallery-category-chips button {
-  flex: 1 1 calc(50% - 8px);
+  flex: 0 0 auto;
+  white-space: nowrap;
   text-align: center;
+}
+
+.gallery-discovery-sidebar .gallery-category-chips {
+  flex-wrap: nowrap;
+  max-width: 100%;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: thin;
 }
 
 .gallery-discovery-sidebar .gallery-date-filters {
   display: grid;
-  grid-template-columns: 42px minmax(0, 1fr);
+  grid-template-columns: 42px minmax(0, 50%);
   gap: 8px;
   align-items: center;
 }
@@ -953,7 +962,7 @@
 }
 
 .gallery-discovery-sidebar .gallery-clear-filters {
-  width: 100%;
+  width: 50%;
   text-align: center;
 }
 

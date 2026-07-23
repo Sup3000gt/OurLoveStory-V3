@@ -39,4 +39,25 @@ describe('GalleryFilters', () => {
     expect(month.disabled).toBe(true);
     expect(container.querySelector('.gallery-filter-toolbar')).not.toBeNull();
   });
+
+  it('exposes compact sidebar groups for the desktop gallery layout', () => {
+    container = document.createElement('div');
+    document.body.append(container);
+    root = createRoot(container);
+
+    act(() => root?.render(
+      <LanguageProvider>
+        <GalleryFilters
+          state={emptyGalleryFilterState}
+          facets={{ years: [] }}
+          onChange={vi.fn()}
+          onClear={vi.fn()}
+        />
+      </LanguageProvider>,
+    ));
+
+    expect(container.querySelector('.gallery-category-chips--single-row')).not.toBeNull();
+    expect(container.querySelector('.gallery-date-filters--compact')).not.toBeNull();
+    expect(container.querySelector('.gallery-clear-filters--compact')).not.toBeNull();
+  });
 });

@@ -27,7 +27,7 @@ export function GalleryFilters({ state, facets, onChange, onClear }: GalleryFilt
 
   return (
     <section className="gallery-filters gallery-filter-toolbar" aria-label={t('gallery.filterLabel')}>
-      <div className="gallery-category-chips" role="group" aria-label={t('gallery.filterLabel')}>
+      <div className="gallery-category-chips gallery-category-chips--single-row" role="group" aria-label={t('gallery.filterLabel')}>
         {categories.map((category) => {
           const label = category === 'All'
             ? t('gallery.all')
@@ -45,7 +45,7 @@ export function GalleryFilters({ state, facets, onChange, onClear }: GalleryFilt
           );
         })}
       </div>
-      <div className="gallery-date-filters">
+      <div className="gallery-date-filters gallery-date-filters--compact">
         <label htmlFor="gallery-filter-year">{t('gallery.year')}</label>
         <select
           id="gallery-filter-year"
@@ -73,7 +73,7 @@ export function GalleryFilters({ state, facets, onChange, onClear }: GalleryFilt
           ))}
         </select>
       </div>
-      <button className="gallery-clear-filters" type="button" onClick={onClear}>
+      <button className="gallery-clear-filters gallery-clear-filters--compact" type="button" onClick={onClear}>
         {t('gallery.clear')}
       </button>
     </section>
