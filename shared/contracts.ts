@@ -61,6 +61,8 @@ export interface ImageAsset {
   filename: string;
   mimeType: string;
   sizeBytes: number;
+  width: number | null;
+  height: number | null;
   sortOrder: number;
   visibility: Visibility;
 }

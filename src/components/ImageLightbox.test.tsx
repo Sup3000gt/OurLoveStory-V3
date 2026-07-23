@@ -17,6 +17,8 @@ const asset: ImageAsset = {
   filename: 'memory.jpg',
   mimeType: 'image/jpeg',
   sizeBytes: 1,
+  width: null,
+  height: null,
   sortOrder: 0,
   visibility: 'public',
 };

@@ -179,6 +179,11 @@
   vertical-align: top;
 }
 
+.memory-card {
+  content-visibility: auto;
+  contain-intrinsic-size: 360px 460px;
+}
+
 .memory-grid-masonry .memory-image-wrap {
   height: auto;
   aspect-ratio: auto;

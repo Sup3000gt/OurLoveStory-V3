@@ -49,6 +49,8 @@ interface JoinedMemoryRow {
   original_filename: string;
   mime_type: string;
   size_bytes: number;
+  width: number | null;
+  height: number | null;
   sort_order: number;
   asset_visibility: MemoryAsset['visibility'];
 }
@@ -218,6 +220,8 @@ export async function listMemories(
       a.original_filename,
       a.mime_type,
       a.size_bytes,
+      a.width,
+      a.height,
       a.sort_order,
       a.visibility AS asset_visibility
     FROM page_memories
@@ -304,6 +308,8 @@ export async function getMemory(env: Env, memoryId: string, isOwner: boolean): P
       a.original_filename,
       a.mime_type,
       a.size_bytes,
+      a.width,
+      a.height,
       a.sort_order,
       a.visibility AS asset_visibility
     FROM memories m
@@ -712,6 +718,8 @@ function aggregateMemories(rows: JoinedMemoryRow[], isOwner: boolean): Memory[] 
         filename: row.original_filename,
         mimeType: row.mime_type,
         sizeBytes: row.size_bytes,
+        width: row.width,
+        height: row.height,
         sortOrder: row.sort_order,
         visibility: row.asset_visibility,
       });
@@ -759,6 +767,8 @@ async function getMemoryForOwner(env: Env, memoryId: string): Promise<Memory | n
       a.original_filename,
       a.mime_type,
       a.size_bytes,
+      a.width,
+      a.height,
       a.sort_order,
       a.visibility AS asset_visibility
     FROM memories m

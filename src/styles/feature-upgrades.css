@@ -8,6 +8,7 @@
 .derivative-image > img {
   display: block;
   width: 100%;
+  aspect-ratio: auto;
 }
 
 .derivative-image-error {
@@ -927,7 +928,8 @@
 }
 
 .share-link-button {
-  min-height: 36px;
+  min-width: 44px;
+  min-height: 44px;
   padding: 7px 11px;
   font-size: 11px;
 }
@@ -1008,7 +1010,8 @@
 
 .gallery-category-chips button,
 .gallery-clear-filters {
-  min-height: 36px;
+  min-width: 44px;
+  min-height: 44px;
   padding: 7px 11px;
   border: 1px solid var(--line);
   border-radius: 999px;
@@ -1126,6 +1129,29 @@
   margin-top: 20px;
 }
 
+.gallery-pagination button,
+.gallery-mobile-filters .secondary-button,
+.gallery-filter-dialog-actions button,
+.timeline-month-navigator a {
+  min-width: 44px;
+  min-height: 44px;
+}
+
+@media (max-width: 900px) {
+  .gallery-discovery-panel {
+    max-width: 720px;
+  }
+
+  .gallery-share-actions,
+  .timeline-period-actions {
+    align-items: stretch;
+  }
+
+  .timeline-month-navigator {
+    gap: 12px;
+  }
+}
+
 @media (max-width: 620px) {
   .gallery-discovery-panel {
     margin-top: 20px;
@@ -1147,6 +1173,24 @@
     width: 100%;
   }
 
+  .gallery-share-actions,
+  .timeline-period-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .share-link-control,
+  .share-link-button,
+  .share-link-manual {
+    width: 100%;
+  }
+
+  .gallery-filter-dialog {
+    width: 100%;
+    max-height: 88dvh;
+    padding-inline: 16px;
+  }
+
   .gallery-result-summary {
     margin-top: 12px;
   }
@@ -1159,16 +1203,25 @@
     align-items: stretch;
     flex-direction: column;
   }
+
+  .timeline-month-navigator {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .timeline-month-navigator a {
+    justify-content: center;
+    text-align: center;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .gallery-search input,
-  .gallery-filters button,
-  .gallery-filter-dialog,
-  .gallery-filter-dialog::backdrop {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
     transition-duration: .01ms !important;
     animation-duration: .01ms !important;
-    animation-iteration-count: 1 !important;
   }
 }
 

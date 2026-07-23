@@ -107,7 +107,14 @@ function AppRoutes() {
   };
 
   const prefetchNextGalleryPage = () => {
-    if (!galleryQuery.hasNextPage || galleryQuery.isFetchingNextPage) return;
+    const connection = navigator as Navigator & { connection?: { saveData?: boolean } };
+    const isLastLoadedPage = galleryPageIndex === galleryPage.totalPages - 1;
+    if (
+      !isLastLoadedPage
+      || !galleryQuery.hasNextPage
+      || galleryQuery.fetchStatus !== 'idle'
+      || connection.connection?.saveData === true
+    ) return;
     void galleryQuery.fetchNextPage();
   };
 

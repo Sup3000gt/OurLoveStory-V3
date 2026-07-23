@@ -33,6 +33,12 @@ describe('DerivativeImage', () => {
     expect(container.querySelector('img')?.getAttribute('src')).not.toBe('/original-secret');
   });
 
+  it('keeps non-priority images lazy', () => {
+    const container = render({ src: '/thumb', alt: 'memory', loading: 'lazy' });
+
+    expect(container.querySelector('img')?.getAttribute('loading')).toBe('lazy');
+  });
+
   it('shows a safe error and Retry action after an image error', () => {
     const container = render({ src: '/preview', alt: 'A memory' });
     act(() => container.querySelector('img')?.dispatchEvent(new Event('error')));

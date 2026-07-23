@@ -28,6 +28,8 @@ const memory: Memory = {
     filename: 'april.jpg',
     mimeType: 'image/jpeg',
     sizeBytes: 1,
+    width: null,
+    height: null,
     sortOrder: 0,
     visibility: 'public',
   }],

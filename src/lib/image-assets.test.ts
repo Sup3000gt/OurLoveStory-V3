@@ -16,6 +16,8 @@ const image: ImageAsset = {
   filename: 'image.jpg',
   mimeType: 'image/jpeg',
   sizeBytes: 10,
+  width: null,
+  height: null,
   sortOrder: 0,
   visibility: 'private',
 };

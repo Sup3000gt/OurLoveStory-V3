@@ -76,6 +76,17 @@ describe('listMemories pagination', () => {
     expect(ownerPage.memories.map((memory) => memory.id)).toContain('memory-private');
   });
 
+  it('returns nullable image dimensions from media assets', async () => {
+    await db.prepare('UPDATE media_assets SET width = 1200, height = 1600 WHERE id = ?')
+      .bind('public-1')
+      .run();
+
+    const page = await listMemories(env, false, { limit: 1 });
+    const asset = page.memories[0]?.assets[0];
+
+    expect(asset).toMatchObject({ type: 'image', width: 1200, height: 1600 });
+  });
+
   it('paginates only the requested category', async () => {
     await insertMemory('memory-food-1', '2026-06-29', 'food-1', 'public', 'Homemade Food');
     await insertMemory('memory-food-2', '2026-06-28', 'food-2', 'public', 'Homemade Food');

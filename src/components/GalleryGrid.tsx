@@ -7,17 +7,24 @@ interface GalleryGridProps {
   memories: Memory[];
   variant?: GalleryVariant;
   isOwner: boolean;
+  prioritizeFirstTwo?: boolean;
 }
 
 export function GalleryGrid({
   memories,
   variant = 'portrait',
   isOwner,
+  prioritizeFirstTwo = false,
 }: GalleryGridProps) {
   return (
     <div className={`memory-grid memory-grid-${variant}`}>
-      {memories.map((memory) => (
-        <MemoryCard key={memory.id} memory={memory} isOwner={isOwner} />
+      {memories.map((memory, index) => (
+        <MemoryCard
+          key={memory.id}
+          memory={memory}
+          isOwner={isOwner}
+          priority={prioritizeFirstTwo && index < 2}
+        />
       ))}
     </div>
   );

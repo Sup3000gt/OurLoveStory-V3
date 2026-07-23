@@ -98,7 +98,12 @@ export function GalleryPage({
         </div>
       ) : null}
       {memories.length > 0 ? (
-        <GalleryGrid memories={memories} variant="masonry" isOwner={isOwner} />
+        <GalleryGrid
+          memories={memories}
+          variant="masonry"
+          isOwner={isOwner}
+          prioritizeFirstTwo={currentPage === 1}
+        />
       ) : null}
       {totalPages > 0 && (hasPreviousPage || hasNextPage) ? (
         <nav className="gallery-pagination" aria-label={t('gallery.paginationLabel')}>

@@ -9,9 +9,10 @@ import { summarizeAssetVisibility } from '../lib/memory-visibility';
 interface MemoryCardProps {
   memory: Memory;
   isOwner: boolean;
+  priority?: boolean;
 }
 
-export function MemoryCard({ memory, isOwner }: MemoryCardProps) {
+export function MemoryCard({ memory, isOwner, priority = false }: MemoryCardProps) {
   const { language, t } = useTranslation();
   const cover = memory.assets.find((asset) => asset.id === memory.coverAssetId) ?? memory.assets[0];
   if (!cover) return null;
@@ -34,7 +35,10 @@ export function MemoryCard({ memory, isOwner }: MemoryCardProps) {
               originalUrl={cover.originalUrl}
               originalFilename={cover.filename}
               downloadLabel={t('memory.downloadOriginal')}
-              loading="lazy"
+              width={cover.width ?? undefined}
+              height={cover.height ?? undefined}
+              loading={priority ? 'eager' : 'lazy'}
+              fetchPriority={priority ? 'high' : 'auto'}
             />
           )}
           <div className="memory-badges">

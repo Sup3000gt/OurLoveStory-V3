@@ -49,7 +49,7 @@ import {
 const ownerImage = {
   id: 'image-owner', type: 'image' as const, thumbnailUrl: '/thumb-owner', previewUrl: '/preview-owner',
   originalUrl: '/original-owner', filename: 'owner.jpg',
-  mimeType: 'image/jpeg', sizeBytes: 1, sortOrder: 0, visibility: 'private' as const,
+  mimeType: 'image/jpeg', sizeBytes: 1, width: null, height: null, sortOrder: 0, visibility: 'private' as const,
 };
 const guestImage = { ...ownerImage, id: 'image-guest', thumbnailUrl: '/thumb-guest', previewUrl: '/preview-guest', originalUrl: null, filename: 'guest.jpg', visibility: 'public' as const };
 const video = { ...ownerImage, id: 'video-public', type: 'video' as const, thumbnailUrl: '/thumb-video', previewUrl: '/preview-video', downloadUrl: '/download-video', url: '/video', filename: 'video.mp4', mimeType: 'video/mp4', visibility: 'public' as const };

@@ -17,7 +17,7 @@ import { MemoryCard } from './MemoryCard';
 const image = {
   id: 'image-1', type: 'image' as const, thumbnailUrl: '/thumb', previewUrl: '/preview',
   originalUrl: null, filename: 'photo.jpg',
-  mimeType: 'image/jpeg', sizeBytes: 1, sortOrder: 0, visibility: 'public' as const,
+  mimeType: 'image/jpeg', sizeBytes: 1, width: 1200, height: 1600, sortOrder: 0, visibility: 'public' as const,
 };
 const video = {
   id: 'video-1', type: 'video' as const, url: '/video', downloadUrl: '/video-download',
@@ -48,6 +48,13 @@ describe('MemoryCard image delivery', () => {
     const container = renderCard(memory(image));
     expect(container.querySelector('.derivative-image img')?.getAttribute('src')).toBe('/thumb');
     expect(container.querySelector('img')?.getAttribute('src')).not.toBe('/legacy');
+  });
+
+  it('passes image dimensions to DerivativeImage', () => {
+    const container = renderCard(memory(image));
+
+    expect(container.querySelector('img')?.getAttribute('width')).toBe('1200');
+    expect(container.querySelector('img')?.getAttribute('height')).toBe('1600');
   });
 
   it('keeps video covers on the video URL', () => {
