@@ -824,15 +824,15 @@ export function MemoryDetailPage({
                 && memory.status === 'published'
                 && asset.type === 'image'
                 && asset.visibility === 'public' ? (
-                  <details
+                  <div
                     className="asset-timeline-cover-controls"
                     data-timeline-cover-controls={asset.id}
                   >
-                    <summary>
+                    <div className="asset-timeline-cover-heading">
                       {t(
                         'detail.timelineCoverControls',
                       )}
-                    </summary>
+                    </div>
 
                     <div className="asset-timeline-cover-actions">
                       <button
@@ -943,7 +943,7 @@ export function MemoryDetailPage({
                             )}
                       </button>
                     </div>
-                  </details>
+                  </div>
                 ) : null}
               </div>
             </article>

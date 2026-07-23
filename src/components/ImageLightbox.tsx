@@ -22,15 +22,11 @@ export function ImageLightbox({
   nextLabel = 'Next image',
   downloadLabel = 'Download original',
 }: ImageLightboxProps) {
-  const [previewLoaded, setPreviewLoaded] = useState(false);
+  const [imageSrc, setImageSrc] = useState(asset.previewUrl);
 
   useEffect(() => {
-    setPreviewLoaded(false);
-    const preview = new Image();
-    preview.onload = () => setPreviewLoaded(true);
-    preview.onerror = () => setPreviewLoaded(false);
-    preview.src = asset.previewUrl;
-  }, [asset.previewUrl]);
+    setImageSrc(asset.previewUrl);
+  }, [asset.id, asset.previewUrl]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -43,7 +39,15 @@ export function ImageLightbox({
   }, [onClose, onNext, onPrevious]);
 
   return (
-    <div className="image-lightbox" role="dialog" aria-modal="true" aria-label={asset.filename}>
+    <div
+      className="image-lightbox"
+      role="dialog"
+      aria-modal="true"
+      aria-label={asset.filename}
+      onClick={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+    >
       <button type="button" className="image-lightbox-close" aria-label={closeLabel} onClick={onClose}>
         ×
       </button>
@@ -52,8 +56,11 @@ export function ImageLightbox({
       </button>
       <img
         className="image-lightbox-image"
-        src={previewLoaded ? asset.previewUrl : asset.thumbnailUrl}
+        src={imageSrc}
         alt={asset.filename}
+        onError={() => {
+          if (imageSrc !== asset.thumbnailUrl) setImageSrc(asset.thumbnailUrl);
+        }}
       />
       <button type="button" className="image-lightbox-next" aria-label={nextLabel} onClick={onNext}>
         ›

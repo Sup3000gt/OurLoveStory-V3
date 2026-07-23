@@ -6,6 +6,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { ImageAsset } from '../../shared/contracts';
 import { ImageLightbox } from './ImageLightbox';
 
+(globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+
 const asset: ImageAsset = {
   id: 'asset-1',
   type: 'image',
@@ -30,16 +32,7 @@ describe('ImageLightbox', () => {
     container = undefined;
   });
 
-  it('keeps the thumbnail visible until the preview preloads', async () => {
-    const OriginalImage = window.Image;
-    let resolvePreview!: () => void;
-    const preload = new Promise<void>((resolve) => { resolvePreview = resolve; });
-    vi.stubGlobal('Image', class {
-      set src(_value: string) { void preload.then(() => this.onload?.()); }
-      onload?: () => void;
-      onerror?: () => void;
-    });
-
+  it('renders the large preview immediately and falls back to the thumbnail on error', () => {
     container = document.createElement('div');
     document.body.append(container);
     root = createRoot(container);
@@ -56,11 +49,32 @@ describe('ImageLightbox', () => {
       />,
     ));
 
-    expect(container.querySelector('img')?.getAttribute('src')).toBe(asset.thumbnailUrl);
-    resolvePreview();
-    await act(async () => { await preload; });
-    expect(container.querySelector('img')?.getAttribute('src')).toBe(asset.previewUrl);
-    vi.stubGlobal('Image', OriginalImage);
+    const image = container.querySelector('img');
+    expect(image?.getAttribute('src')).toBe(asset.previewUrl);
+    act(() => image?.dispatchEvent(new Event('error', { bubbles: false })));
+    expect(image?.getAttribute('src')).toBe(asset.thumbnailUrl);
+  });
+
+  it('closes when the backdrop is clicked but not when the image is clicked', () => {
+    const onClose = vi.fn();
+    container = document.createElement('div');
+    document.body.append(container);
+    root = createRoot(container);
+    act(() => root?.render(
+      <ImageLightbox
+        asset={asset}
+        onClose={onClose}
+        onPrevious={vi.fn()}
+        onNext={vi.fn()}
+      />,
+    ));
+
+    const lightbox = container.querySelector('.image-lightbox');
+    const image = container.querySelector('img');
+    act(() => lightbox?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+    expect(onClose).toHaveBeenCalledTimes(1);
+    act(() => image?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+    expect(onClose).toHaveBeenCalledTimes(1);
   });
 
   it('keeps the close control above the sticky site header', () => {

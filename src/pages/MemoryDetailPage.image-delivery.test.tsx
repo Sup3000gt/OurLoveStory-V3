@@ -125,6 +125,15 @@ describe('MemoryDetailPage image delivery', () => {
     expect(container.querySelector('[data-timeline-cover-controls="video-public"]')).toBeNull();
   });
 
+  it('keeps timeline cover actions visible without a collapsed disclosure', () => {
+    const container = renderDetail(true);
+    const controls = container.querySelector('[data-timeline-cover-controls="image-guest"]')!;
+
+    expect(controls.querySelector('details')).toBeNull();
+    expect(controls.querySelector('summary')).toBeNull();
+    expect(controls.querySelector('.asset-timeline-cover-heading')).not.toBeNull();
+  });
+
   it('sets year and month covers using the periods derived from the memory date', async () => {
     vi.mocked(setTimelineCover).mockResolvedValue({ periodType: 'year', periodKey: '2026', assetId: 'image-guest' });
     const container = renderDetail(true);
