@@ -205,6 +205,7 @@ describe('GalleryPage pagination', () => {
     ));
 
     expect(container.querySelector('.memory-card')).not.toBeNull();
+    expect(container.querySelector('.gallery-grid-state--tall-cards')).not.toBeNull();
     const retryButton = Array.from(container.querySelectorAll('button'))
       .find((button) => button.textContent?.includes('Try again'));
     expect(retryButton).toBeTruthy();

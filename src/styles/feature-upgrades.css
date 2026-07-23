@@ -941,6 +941,11 @@
   text-align: center;
 }
 
+.gallery-discovery-sidebar .gallery-category-chips--expanded button {
+  min-width: 96px;
+  padding-inline: 16px;
+}
+
 .gallery-discovery-sidebar .gallery-category-chips {
   flex-wrap: nowrap;
   max-width: 100%;
@@ -978,6 +983,20 @@
 .gallery-discovery-sidebar .share-link-control,
 .gallery-discovery-sidebar .share-link-button {
   width: 100%;
+}
+
+@media (min-width: 901px) {
+  .gallery-grid-state--tall-cards .memory-grid-masonry .memory-image-wrap {
+    aspect-ratio: 4 / 5;
+    overflow: hidden;
+  }
+
+  .gallery-grid-state--tall-cards .memory-grid-masonry .memory-image-wrap img,
+  .gallery-grid-state--tall-cards .memory-grid-masonry .memory-image-wrap video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
 }
 
 .gallery-share-actions,

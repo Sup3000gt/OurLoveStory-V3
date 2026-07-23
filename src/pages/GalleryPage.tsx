@@ -114,7 +114,7 @@ export function GalleryPage({
             </div>
           ) : null}
           {memories.length > 0 ? (
-            <div className="gallery-grid-state">
+            <div className="gallery-grid-state gallery-grid-state--tall-cards">
               <GalleryGrid
                 memories={memories}
                 variant="masonry"

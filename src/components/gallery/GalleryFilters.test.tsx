@@ -56,7 +56,7 @@ describe('GalleryFilters', () => {
       </LanguageProvider>,
     ));
 
-    expect(container.querySelector('.gallery-category-chips--single-row')).not.toBeNull();
+    expect(container.querySelector('.gallery-category-chips--single-row.gallery-category-chips--expanded')).not.toBeNull();
     expect(container.querySelector('.gallery-date-filters--compact')).not.toBeNull();
     expect(container.querySelector('.gallery-clear-filters--compact')).not.toBeNull();
   });

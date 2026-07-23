@@ -27,7 +27,7 @@ export function GalleryFilters({ state, facets, onChange, onClear }: GalleryFilt
 
   return (
     <section className="gallery-filters gallery-filter-toolbar" aria-label={t('gallery.filterLabel')}>
-      <div className="gallery-category-chips gallery-category-chips--single-row" role="group" aria-label={t('gallery.filterLabel')}>
+      <div className="gallery-category-chips gallery-category-chips--single-row gallery-category-chips--expanded" role="group" aria-label={t('gallery.filterLabel')}>
         {categories.map((category) => {
           const label = category === 'All'
             ? t('gallery.all')
