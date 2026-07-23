@@ -1,8 +1,10 @@
 import { TimelinePhoto } from '../components/TimelinePhoto';
+import { TimelineYearNav } from '../components/TimelineYearNav';
 import { useTimeline } from '../hooks/useTimeline';
 import { timelineMonthTranslationKeys } from '../i18n/translations';
 import { useTranslation } from '../i18n/useTranslation';
 import { timelineCoverHref, timelineMonthArchiveHref } from '../lib/timeline';
+import { timelineYearAnchor } from '../lib/timeline-navigation';
 
 export function TimelinePage() {
   const { data: timeline, error, isLoading } = useTimeline();
@@ -25,66 +27,69 @@ export function TimelinePage() {
         <div className="gallery-status">{t('timeline.empty')}</div>
       ) : null}
       {timeline?.years.length ? (
-        <section className="timeline-river" aria-label={t('timeline.riverLabel')}>
-          {timeline.years.map((year, yearIndex) => {
-            const months = year.months.filter((month) => month.photoCount > 0);
-            return (
-              <section className="timeline-year" key={year.key}>
-                <div className="timeline-year-marker" aria-hidden="true">
-                  <span />
-                </div>
-                <div className="timeline-year-content">
-                  <div className="timeline-period-heading">
-                    <h2 data-timeline-period-label>{year.label}</h2>
-                    <span>{photoCountLabel(year.photoCount)}</span>
+        <>
+          <TimelineYearNav years={timeline.years} />
+          <section className="timeline-river" aria-label={t('timeline.riverLabel')}>
+            {timeline.years.map((year, yearIndex) => {
+              const months = year.months.filter((month) => month.photoCount > 0);
+              return (
+                <section className="timeline-year" id={timelineYearAnchor(Number(year.key))} key={year.key}>
+                  <div className="timeline-year-marker" aria-hidden="true">
+                    <span />
                   </div>
-                  <article className="timeline-year-card">
-                    <a className="timeline-cover-link" href={timelineCoverHref(year.cover)}>
-                      <TimelinePhoto
-                        photo={year.cover}
-                        periodLabel={year.label}
-                        loading={yearIndex === 0 ? 'eager' : 'lazy'}
-                      />
-                      <span className="timeline-card-caption">{t('timeline.yearCover')}</span>
-                    </a>
-                  </article>
-                  {months.length ? (
-                    <div className="timeline-month-grid">
-                      {months.map((month) => {
-                        const monthLabel = t('timeline.monthLabel', {
-                          month: t(timelineMonthTranslationKeys[month.month]),
-                          year: month.year,
-                        });
-
-                        return (
-                        <article className="timeline-month-card" key={month.key}>
-                          <a className="timeline-cover-link" href={timelineCoverHref(month.cover)}>
-                            <TimelinePhoto
-                              photo={month.cover}
-                              periodLabel={monthLabel}
-                              loading="lazy"
-                            />
-                            <div className="timeline-month-copy">
-                              <h3 data-timeline-period-label>{monthLabel}</h3>
-                              <span>{photoCountLabel(month.photoCount)}</span>
-                            </div>
-                          </a>
-                          <a
-                            className="timeline-month-archive-link"
-                            href={timelineMonthArchiveHref(month.key)}
-                          >
-                            {t('timeline.viewMonth')}
-                          </a>
-                        </article>
-                        );
-                      })}
+                  <div className="timeline-year-content">
+                    <div className="timeline-period-heading">
+                      <h2 data-timeline-period-label>{year.label}</h2>
+                      <span>{photoCountLabel(year.photoCount)}</span>
                     </div>
-                  ) : null}
-                </div>
-              </section>
-            );
-          })}
-        </section>
+                    <article className="timeline-year-card">
+                      <a className="timeline-cover-link" href={timelineCoverHref(year.cover)}>
+                        <TimelinePhoto
+                          photo={year.cover}
+                          periodLabel={year.label}
+                          loading={yearIndex === 0 ? 'eager' : 'lazy'}
+                        />
+                        <span className="timeline-card-caption">{t('timeline.yearCover')}</span>
+                      </a>
+                    </article>
+                    {months.length ? (
+                      <div className="timeline-month-grid">
+                        {months.map((month) => {
+                          const monthLabel = t('timeline.monthLabel', {
+                            month: t(timelineMonthTranslationKeys[month.month]),
+                            year: month.year,
+                          });
+
+                          return (
+                            <article className="timeline-month-card" key={month.key}>
+                              <a className="timeline-cover-link" href={timelineCoverHref(month.cover)}>
+                                <TimelinePhoto
+                                  photo={month.cover}
+                                  periodLabel={monthLabel}
+                                  loading="lazy"
+                                />
+                                <div className="timeline-month-copy">
+                                  <h3 data-timeline-period-label>{monthLabel}</h3>
+                                  <span>{photoCountLabel(month.photoCount)}</span>
+                                </div>
+                              </a>
+                              <a
+                                className="timeline-month-archive-link"
+                                href={timelineMonthArchiveHref(month.key)}
+                              >
+                                {t('timeline.viewMonth')}
+                              </a>
+                            </article>
+                          );
+                        })}
+                      </div>
+                    ) : null}
+                  </div>
+                </section>
+              );
+            })}
+          </section>
+        </>
       ) : null}
     </main>
   );

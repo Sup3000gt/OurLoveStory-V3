@@ -1,16 +1,20 @@
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { GalleryGrid } from '../components/GalleryGrid';
+import { TimelineMonthNavigator } from '../components/TimelineMonthNavigator';
+import { useTimeline } from '../hooks/useTimeline';
 import { timelineMonthTranslationKeys } from '../i18n/translations';
 import { useTranslation } from '../i18n/useTranslation';
 import { getGalleryPageState } from '../lib/gallery-pagination';
 import { parseTimelineMonthKey } from '../lib/timeline';
+import { adjacentTimelineMonths, visibleTimelineMonths } from '../lib/timeline-navigation';
 import { useTimelineMonth } from '../hooks/useTimelineMonth';
 
 export function TimelineMonthPage() {
   const { monthKey = '' } = useParams();
   const { t } = useTranslation();
   const month = parseTimelineMonthKey(monthKey);
+  const timelineQuery = useTimeline();
   const monthQuery = useTimelineMonth(monthKey);
   const [pageIndex, setPageIndex] = useState(0);
   const monthPage = getGalleryPageState(
@@ -24,6 +28,9 @@ export function TimelineMonthPage() {
       year: month.year,
     })
     : t('timeline.title');
+  const adjacentMonths = timelineQuery.data
+    ? adjacentTimelineMonths(visibleTimelineMonths(timelineQuery.data), monthKey)
+    : { previous: null, next: null };
 
   const goToPreviousPage = () => {
     setPageIndex((currentPage) => Math.max(currentPage - 1, 0));
@@ -69,7 +76,10 @@ export function TimelineMonthPage() {
         <div className="gallery-status">{t('timeline.monthEmpty')}</div>
       ) : null}
       {monthPage.memories.length > 0 ? (
-        <GalleryGrid memories={monthPage.memories} variant="masonry" isOwner={false} />
+        <>
+          <TimelineMonthNavigator {...adjacentMonths} />
+          <GalleryGrid memories={monthPage.memories} variant="masonry" isOwner={false} />
+        </>
       ) : null}
       {month && monthPage.totalPages > 0 && (monthPage.hasPreviousPage || monthPage.hasNextPage) ? (
         <nav className="gallery-pagination" aria-label={t('timeline.monthPaginationLabel')}>
@@ -92,6 +102,7 @@ export function TimelineMonthPage() {
           </button>
         </nav>
       ) : null}
+      {month ? <TimelineMonthNavigator {...adjacentMonths} /> : null}
     </main>
   );
 }

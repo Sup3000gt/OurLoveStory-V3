@@ -2,7 +2,7 @@ import { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { Memory } from '../../shared/contracts';
+import type { Memory, TimelineResponse } from '../../shared/contracts';
 import { LanguageProvider } from '../i18n/LanguageProvider';
 import { TimelineMonthPage } from './TimelineMonthPage';
 
@@ -35,9 +35,27 @@ const memory: Memory = {
   updatedAt: '2025-04-03T00:00:00Z',
 };
 
-const { useTimelineMonth } = vi.hoisted(() => ({ useTimelineMonth: vi.fn() }));
+const { useTimeline, useTimelineMonth } = vi.hoisted(() => ({
+  useTimeline: vi.fn(),
+  useTimelineMonth: vi.fn(),
+}));
 
+vi.mock('../hooks/useTimeline', () => ({ useTimeline }));
 vi.mock('../hooks/useTimelineMonth', () => ({ useTimelineMonth }));
+
+const timeline = {
+  years: [{
+    key: '2025',
+    label: '2025',
+    photoCount: 3,
+    months: [
+      { key: '2025-03', year: '2025', month: 3, label: 'March 2025', photoCount: 1 },
+      { key: '2025-04', year: '2025', month: 4, label: 'April 2025', photoCount: 1 },
+      { key: '2025-05', year: '2025', month: 5, label: 'May 2025', photoCount: 0 },
+      { key: '2025-06', year: '2025', month: 6, label: 'June 2025', photoCount: 1 },
+    ],
+  }],
+} as TimelineResponse;
 
 describe('TimelineMonthPage', () => {
   let root: ReturnType<typeof createRoot> | undefined;
@@ -48,10 +66,12 @@ describe('TimelineMonthPage', () => {
     container?.remove();
     root = undefined;
     container = undefined;
+    useTimeline.mockReset();
     useTimelineMonth.mockReset();
   });
 
   it('shows the month archive and paginates its memory cards', () => {
+    useTimeline.mockReturnValue({ data: timeline, isLoading: false, error: null });
     useTimelineMonth.mockReturnValue({
       data: { pages: [{ memories: [memory], nextCursor: 'cursor-2' }] },
       isLoading: false,
@@ -79,5 +99,18 @@ describe('TimelineMonthPage', () => {
     expect(container.textContent).toContain('Page 1');
     expect(Array.from(container.querySelectorAll('button'))
       .some((button) => button.textContent?.includes('Next page'))).toBe(true);
+    const navigators = Array.from(container.querySelectorAll<HTMLElement>('.timeline-month-navigator'));
+    expect(navigators).toHaveLength(2);
+    expect(Array.from(container.querySelectorAll<HTMLAnchorElement>('.timeline-month-navigator a'))
+      .map((link) => link.getAttribute('href'))).toEqual([
+        '/timeline/2025-03',
+        '/timeline/2025-06',
+        '/timeline/2025-03',
+        '/timeline/2025-06',
+      ]);
+    expect(navigators[0].compareDocumentPosition(container.querySelector('.memory-grid')!)
+      & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(container.querySelector('.gallery-pagination')!.compareDocumentPosition(navigators[1])
+      & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 });

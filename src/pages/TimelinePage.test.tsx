@@ -143,6 +143,17 @@ describe('TimelinePage', () => {
     expect(page.querySelectorAll('.timeline-preview-frame[data-preview-ratio="3:2"]')).toHaveLength(4);
   });
 
+  it('links to stable anchors for each timeline year', () => {
+    useTimeline.mockReturnValue({ data: timeline, isLoading: false, error: null });
+
+    const page = renderPage();
+
+    expect(Array.from(page.querySelectorAll<HTMLAnchorElement>('.timeline-year-nav a'))
+      .map((link) => link.getAttribute('href'))).toEqual(['#year-2025', '#year-2024']);
+    expect(Array.from(page.querySelectorAll<HTMLElement>('.timeline-year'))
+      .map((section) => section.id)).toEqual(['year-2025', 'year-2024']);
+  });
+
   it('links every cover to its exact memory asset and omits empty cards and extra copy', () => {
     useTimeline.mockReturnValue({ data: timeline, isLoading: false, error: null });
 
