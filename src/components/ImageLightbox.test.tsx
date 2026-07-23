@@ -69,9 +69,10 @@ describe('ImageLightbox', () => {
       />,
     ));
 
-    const lightbox = container.querySelector('.image-lightbox');
+    const backdrop = container.querySelector('.image-lightbox-backdrop');
     const image = container.querySelector('img');
-    act(() => lightbox?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+    expect(backdrop).not.toBeNull();
+    act(() => backdrop?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
     expect(onClose).toHaveBeenCalledTimes(1);
     act(() => image?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
     expect(onClose).toHaveBeenCalledTimes(1);

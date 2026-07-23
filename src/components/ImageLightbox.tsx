@@ -44,10 +44,8 @@ export function ImageLightbox({
       role="dialog"
       aria-modal="true"
       aria-label={asset.filename}
-      onClick={(event) => {
-        if (event.target === event.currentTarget) onClose();
-      }}
     >
+      <div className="image-lightbox-backdrop" aria-hidden="true" onClick={onClose} />
       <button type="button" className="image-lightbox-close" aria-label={closeLabel} onClick={onClose}>
         ×
       </button>
