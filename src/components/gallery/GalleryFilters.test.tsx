@@ -37,5 +37,6 @@ describe('GalleryFilters', () => {
     const month = container.querySelector('select[name="month"]') as HTMLSelectElement;
     expect(month.labels?.[0]?.textContent).toBe('Month');
     expect(month.disabled).toBe(true);
+    expect(container.querySelector('.gallery-filter-toolbar')).not.toBeNull();
   });
 });

@@ -906,11 +906,12 @@
 }
 
 .gallery-share-actions {
-  justify-content: space-between;
+  justify-content: flex-end;
 }
 
 .gallery-share-actions p {
   margin: 0;
+  margin-right: auto;
   color: var(--muted);
   font-size: 11px;
 }
@@ -1054,6 +1055,29 @@
 
 .gallery-clear-filters {
   white-space: nowrap;
+}
+
+.gallery-filter-toolbar {
+  grid-template-areas:
+    "categories clear"
+    "dates clear";
+}
+
+.gallery-filter-toolbar .gallery-category-chips {
+  grid-area: categories;
+  min-width: 0;
+}
+
+.gallery-filter-toolbar .gallery-date-filters {
+  grid-area: dates;
+  grid-column: auto;
+  flex-wrap: nowrap;
+  padding-top: 0;
+}
+
+.gallery-filter-toolbar .gallery-clear-filters {
+  grid-area: clear;
+  align-self: center;
 }
 
 .gallery-mobile-filters {
@@ -1216,6 +1240,10 @@
   .timeline-period-actions {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .gallery-share-actions p {
+    margin-right: 0;
   }
 
   .share-link-control,
