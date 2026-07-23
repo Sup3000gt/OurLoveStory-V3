@@ -16,6 +16,7 @@ Task 8 verification for the Memory River timeline and owner-managed yearly/month
 - `6174215` — memory lightbox links and owner cover controls
 - `69a7c97` — `/timeline` route and Journal navigation
 - `a24dcfc` — Chinese timeline photo-count localization fix
+- `7c79b9d` — stale-cover protection, timeline cache invalidation, and localized month labels
 
 ## Automated verification
 
@@ -23,10 +24,10 @@ All commands were run from the repository root:
 
 ```text
 npm.cmd run typecheck       PASS
-npm.cmd test                PASS — 59 files, 262 tests
+npm.cmd test                PASS — 59 files, 266 tests
 npm.cmd run build           PASS — SSR and client Vite builds
 npm.cmd exec wrangler -- deploy --dry-run
-                            PASS — 17 assets, 158.77 KiB upload / 35.19 KiB gzip
+                            PASS — 17 assets, 158.86 KiB upload / 35.21 KiB gzip
 git diff --check            PASS
 ```
 
@@ -40,8 +41,15 @@ The local Vite/Cloudflare development server was opened at `http://127.0.0.1:417
 - Chinese language toggle loaded the translated timeline heading and empty-state message.
 - Header navigation exposed Journal at `/timeline`.
 - Before local D1 initialization the endpoint returned 500 because the local database had no schema; after initialization the route returned the expected empty state.
+- After the final fixes, the browser regression again loaded both Chinese and English empty states successfully.
 
 The local database was not populated with production photos, so period cards, lightbox navigation, and owner cover mutations were validated by the automated route/component tests rather than by inventing local fixture data.
+
+## Review fixes
+
+- Explicit covers are ignored when the referenced memory date no longer matches the stored year/month period.
+- Successful public-asset visibility changes and asset deletion invalidate the `timeline` query immediately.
+- Month labels now use the active language (`May 2025` in English and `2025年5月` in Chinese).
 
 ## Release note
 
