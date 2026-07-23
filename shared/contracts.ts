@@ -102,6 +102,7 @@ export interface Memory {
 export interface MemoryPage {
   memories: Memory[];
   nextCursor: string | null;
+  totalCount: number;
 }
 
 export interface OwnerSession {
