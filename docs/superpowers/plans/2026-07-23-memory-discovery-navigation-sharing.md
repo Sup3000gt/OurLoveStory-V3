@@ -951,7 +951,9 @@ Verify:
 If verification exposes a concrete regression, add its failing test first, apply the minimal fix, rerun the affected suite plus the full check/build, then run:
 
 ~~~powershell
-git add -- <only-regression-files>
+$changedFiles = git diff --name-only
+if (-not $changedFiles) { throw 'No regression files are present to commit.' }
+git add -- $changedFiles
 git commit -m "fix: resolve memory discovery regression"
 git push origin main
 ~~~
