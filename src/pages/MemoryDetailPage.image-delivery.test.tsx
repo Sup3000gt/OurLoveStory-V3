@@ -32,7 +32,34 @@ vi.mock('react-router-dom', () => ({
   useParams: () => ({ memoryId: 'memory-1' }),
 }));
 vi.mock('../components/DerivativeImage', () => ({
-  DerivativeImage: ({ src, alt, onClick }: { src: string; alt: string; onClick?: () => void }) => <img className="derivative-image-test" src={src} alt={alt} onClick={onClick} />,
+  DerivativeImage: ({
+    src,
+    alt,
+    onClick,
+    loading,
+    fetchPriority,
+    width,
+    height,
+  }: {
+    src: string;
+    alt: string;
+    onClick?: () => void;
+    loading?: 'eager' | 'lazy';
+    fetchPriority?: 'high' | 'low' | 'auto';
+    width?: number;
+    height?: number;
+  }) => (
+    <img
+      className="derivative-image-test"
+      src={src}
+      alt={alt}
+      onClick={onClick}
+      loading={loading}
+      fetchPriority={fetchPriority}
+      width={width}
+      height={height}
+    />
+  ),
 }));
 vi.mock('../components/ImageLightbox', () => ({
   ImageLightbox: ({ asset }: { asset: { previewUrl: string } }) => <div role="dialog" data-preview={asset.previewUrl} />,
@@ -98,6 +125,40 @@ describe('MemoryDetailPage image delivery', () => {
     const image = container.querySelector('img[src="/thumb-owner"]');
     act(() => image?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
     expect(container.querySelector('[role="dialog"]')?.getAttribute('data-preview')).toBe('/preview-owner');
+  });
+
+  it('loads the first image eagerly and defers the rest', () => {
+    const detail = {
+      ...memory,
+      assets: [
+        {
+          ...ownerImage,
+          width: 1600,
+          height: 900,
+        },
+        guestImage,
+      ],
+    };
+    const container =
+      renderDetail(false, detail);
+    const images =
+      container.querySelectorAll<HTMLImageElement>(
+        '.derivative-image-test',
+      );
+
+    expect(
+      images[0]?.getAttribute('loading'),
+    ).toBe('eager');
+    expect(
+      images[0]?.getAttribute(
+        'fetchpriority',
+      ),
+    ).toBe('high');
+    expect(images[0]?.width).toBe(1600);
+    expect(images[0]?.height).toBe(900);
+    expect(
+      images[1]?.getAttribute('loading'),
+    ).toBe('lazy');
   });
 
   it('opens the public image selected by the asset query parameter on first render', () => {

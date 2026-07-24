@@ -13,6 +13,7 @@ import {
   ImagePlus,
   LockKeyhole,
   MapPin,
+  Pencil,
   Trash2,
 } from 'lucide-react';
 import {
@@ -30,10 +31,12 @@ import type {
   Memory,
   MemoryAsset,
   MemoryPage,
+  UpdateMemoryRequest,
   Visibility,
 } from '../../shared/contracts';
 import { DerivativeImage } from '../components/DerivativeImage';
 import { ImageLightbox } from '../components/ImageLightbox';
+import { MemoryEditForm } from '../components/MemoryEditForm';
 import { ShareLinkButton } from '../components/ShareLinkButton';
 import {
   activeAppendSessionForMemory,
@@ -51,6 +54,7 @@ import {
   deleteMemoryAsset,
   setTimelineCover,
   updateAssetVisibility,
+  updateMemory as updateMemoryRequest,
 } from '../lib/api';
 import {
   formatMemoryDate,
@@ -82,6 +86,8 @@ export function MemoryDetailPage({
 
   const {
     getToken,
+    isSignedIn,
+    userId,
   } = useAuth();
 
   const queryClient =
@@ -147,6 +153,19 @@ export function MemoryDetailPage({
     setTimelineCoverError,
   ] = useState('');
 
+  const [
+    editingMemory,
+    setEditingMemory,
+  ] = useState(false);
+  const [
+    savingMemory,
+    setSavingMemory,
+  ] = useState(false);
+  const [
+    editMemoryError,
+    setEditMemoryError,
+  ] = useState('');
+
   const successTimer =
     useRef<
       number | null
@@ -181,7 +200,91 @@ export function MemoryDetailPage({
   const interactionBusy =
     pendingAssetId !== null
     || pendingDeleteAssetId
-      !== null;
+      !== null
+    || savingMemory;
+
+  async function saveMemory(
+    input: UpdateMemoryRequest,
+  ) {
+    if (
+      !isOwner
+      || !memory
+      || savingMemory
+    ) {
+      return;
+    }
+
+    setSavingMemory(true);
+    setEditMemoryError('');
+
+    try {
+      const updated =
+        await updateMemoryRequest(
+          memory.id,
+          input,
+          getToken,
+        );
+      const ownerQuery = (
+        query: {
+          queryKey: readonly unknown[];
+        },
+      ) =>
+        query.queryKey[0]
+          === 'memories'
+        && query.queryKey[2]
+          === isSignedIn
+        && query.queryKey[3]
+          === userId;
+
+      queryClient
+        .setQueriesData<
+          InfiniteData<MemoryPage>
+        >(
+          { predicate: ownerQuery },
+          (current) =>
+            updateMemoryPages(
+              current,
+              (items) =>
+                items.map((item) =>
+                  item.id === updated.id
+                    ? updated
+                    : item,
+                ),
+            ),
+        );
+      queryClient.setQueryData(
+        [
+          'memory',
+          updated.id,
+          isSignedIn,
+          userId,
+        ],
+        updated,
+      );
+      await Promise.all([
+        queryClient.invalidateQueries({
+          predicate: ownerQuery,
+        }),
+        queryClient.invalidateQueries({
+          queryKey: [
+            'memory-facets',
+            isSignedIn,
+            userId,
+          ],
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ['timeline'],
+        }),
+      ]);
+      setEditingMemory(false);
+    } catch {
+      setEditMemoryError(
+        t('detail.editFailed'),
+      );
+    } finally {
+      setSavingMemory(false);
+    }
+  }
 
   useEffect(
     () => () => {
@@ -567,6 +670,22 @@ export function MemoryDetailPage({
 
           {isOwner ? (
             <div className="detail-upload-actions">
+              <button
+                className="secondary-button detail-edit-memory"
+                type="button"
+                disabled={interactionBusy}
+                onClick={() => {
+                  setEditMemoryError('');
+                  setEditingMemory(
+                    (current) =>
+                      !current,
+                  );
+                }}
+              >
+                <Pencil size={16} />
+                {t('detail.edit')}
+              </button>
+
               <Link
                 className="primary-button detail-add-photos"
                 to={
@@ -603,6 +722,21 @@ export function MemoryDetailPage({
             </div>
           ) : null}
         </div>
+
+        {isOwner
+          && editingMemory ? (
+            <MemoryEditForm
+              key={memory.updatedAt}
+              memory={memory}
+              busy={savingMemory}
+              error={editMemoryError}
+              onCancel={() => {
+                setEditMemoryError('');
+                setEditingMemory(false);
+              }}
+              onSave={saveMemory}
+            />
+          ) : null}
 
         <div className="detail-metadata">
           <span>
@@ -699,7 +833,26 @@ export function MemoryDetailPage({
                       originalUrl={isOwner ? asset.originalUrl : null}
                       originalFilename={asset.filename}
                       downloadLabel={t('memory.downloadOriginal')}
-                      loading="lazy"
+                      width={
+                        asset.width
+                        ?? undefined
+                      }
+                      height={
+                        asset.height
+                        ?? undefined
+                      }
+                      loading={
+                        asset.id
+                          === imageAssets[0]?.id
+                          ? 'eager'
+                          : 'lazy'
+                      }
+                      fetchPriority={
+                        asset.id
+                          === imageAssets[0]?.id
+                          ? 'high'
+                          : 'auto'
+                      }
                       onClick={() => setSelectedImageId(asset.id)}
                     />
                   )}

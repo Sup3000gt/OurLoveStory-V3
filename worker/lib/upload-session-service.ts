@@ -211,13 +211,15 @@ export async function createUploadSession(
           original_filename,
           mime_type,
           size_bytes,
+          width,
+          height,
           original_sort_order,
           review_sort_order,
           target_visibility,
           allow_duplicate,
           file_status,
           last_error
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)
       `).bind(
         plan.id,
         sessionId,
@@ -228,6 +230,8 @@ export async function createUploadSession(
         file.filename,
         file.mimeType,
         file.sizeBytes,
+        file.width ?? null,
+        file.height ?? null,
         file.originalSortOrder,
         file.originalSortOrder,
         file.targetVisibility,
@@ -1242,11 +1246,13 @@ function createAssetInsert(
       original_filename,
       mime_type,
       size_bytes,
+      width,
+      height,
       sort_order,
       visibility,
       content_hash,
       hash_version
-    ) VALUES (?, ?, 'image', ?, ?, ?, ?, ?, ?, ?, ?)
+    ) VALUES (?, ?, 'image', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).bind(
     assetId,
     memoryId,
@@ -1254,6 +1260,8 @@ function createAssetInsert(
     file.original_filename,
     file.mime_type,
     file.size_bytes,
+    file.width,
+    file.height,
     sortOrder,
     file.target_visibility,
     file.content_hash,

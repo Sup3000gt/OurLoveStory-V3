@@ -541,6 +541,85 @@
   color: var(--muted-text, #76635d);
 }
 
+.detail-edit-memory {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+}
+
+.memory-edit-form {
+  display: grid;
+  gap: 16px;
+  margin: 24px auto;
+  padding: 20px;
+  border: 1px solid rgba(121, 84, 70, .18);
+  border-radius: 18px;
+  background: rgba(255, 252, 249, .92);
+  box-shadow: 0 14px 36px rgba(69, 43, 34, .08);
+  text-align: left;
+}
+
+.memory-edit-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.memory-edit-grid label {
+  display: grid;
+  gap: 7px;
+  color: var(--muted-text, #76635d);
+  font-size: .78rem;
+}
+
+.memory-edit-grid input,
+.memory-edit-grid select,
+.memory-edit-grid textarea {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid rgba(121, 84, 70, .2);
+  border-radius: 11px;
+  background: #fffdfa;
+  color: var(--ink, #463a35);
+  font: inherit;
+}
+
+.memory-edit-grid textarea {
+  min-height: 108px;
+  resize: vertical;
+}
+
+.memory-edit-description {
+  grid-column: 1 / -1;
+}
+
+.memory-edit-grid .memory-edit-featured {
+  display: flex;
+  align-items: center;
+  align-self: end;
+  gap: 9px;
+  min-height: 44px;
+}
+
+.memory-edit-featured input {
+  width: 18px;
+  min-height: 18px;
+}
+
+.memory-edit-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.memory-edit-error {
+  margin: 0;
+  color: #934c47;
+  font-size: .82rem;
+}
+
 .add-photos-page,
 .upload-session-review-page {
   width: min(1180px, calc(100% - 32px));
@@ -828,6 +907,30 @@
   .detail-upload-actions {
     width: 100%;
     margin-left: 0;
+  }
+
+  .detail-upload-actions > * {
+    flex: 1 1 150px;
+  }
+
+  .memory-edit-form {
+    padding: 16px;
+  }
+
+  .memory-edit-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .memory-edit-description {
+    grid-column: auto;
+  }
+
+  .memory-edit-actions {
+    flex-direction: column-reverse;
+  }
+
+  .memory-edit-actions > button {
+    width: 100%;
   }
 
   .photo-preview-grid,

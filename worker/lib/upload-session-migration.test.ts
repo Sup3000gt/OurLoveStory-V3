@@ -5,6 +5,10 @@ const migration = readFileSync(
   'database/migrations/0003_upload_sessions_and_asset_hashes.sql',
   'utf8',
 );
+const dimensionMigration = readFileSync(
+  'database/migrations/0006_upload_image_dimensions.sql',
+  'utf8',
+);
 
 describe('upload session Migration', () => {
   it('requires Append Sessions to bind a Memory', () => {
@@ -29,5 +33,12 @@ describe('upload session Migration', () => {
     expect(migration).toContain(
       "session_status IN ('uploading', 'review')",
     );
+  });
+
+  it('adds optional image dimensions to resumable uploads', () => {
+    expect(dimensionMigration)
+      .toContain('ADD COLUMN width INTEGER');
+    expect(dimensionMigration)
+      .toContain('ADD COLUMN height INTEGER');
   });
 });

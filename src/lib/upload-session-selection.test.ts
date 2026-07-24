@@ -83,6 +83,14 @@ describe('preparePhotoMetadata', () => {
             .padStart(64, '0');
         },
       },
+      undefined,
+      async (file) => ({
+        width:
+          file.name === 'one.jpg'
+            ? 1600
+            : 1200,
+        height: 900,
+      }),
     );
 
     expect(calls).toEqual(['one.jpg', 'two.jpg']);
@@ -95,6 +103,15 @@ describe('preparePhotoMetadata', () => {
         (item) => item.targetVisibility === 'private',
       ),
     ).toBe(true);
+    expect(
+      prepared.map((item) => [
+        item.width,
+        item.height,
+      ]),
+    ).toEqual([
+      [1600, 900],
+      [1200, 900],
+    ]);
   });
 });
 
@@ -110,6 +127,8 @@ describe('Session matching', () => {
         contentHash: 'a'.repeat(64),
         occurrenceIndex: 0,
         targetVisibility: 'private' as const,
+        width: 1200,
+        height: 800,
       },
       {
         localId: 'local-1',
@@ -120,6 +139,8 @@ describe('Session matching', () => {
         contentHash: 'a'.repeat(64),
         occurrenceIndex: 1,
         targetVisibility: 'private' as const,
+        width: 1200,
+        height: 800,
       },
     ];
 
@@ -163,6 +184,8 @@ describe('Session matching', () => {
         contentHash: 'a'.repeat(64),
         occurrenceIndex: 0,
         targetVisibility: 'private' as const,
+        width: 1200,
+        height: 800,
       },
       {
         localId: 'local-1',
@@ -173,6 +196,8 @@ describe('Session matching', () => {
         contentHash: 'b'.repeat(64),
         occurrenceIndex: 1,
         targetVisibility: 'private' as const,
+        width: 1200,
+        height: 800,
       },
     ];
 

@@ -97,7 +97,7 @@ function memoryRow(overrides: Record<string, unknown> = {}) {
 
 describe('secure image delivery', () => {
   it.each([
-    ['public', 'published', true, 'public, no-cache, must-revalidate'],
+    ['public', 'published', true, 'public, max-age=31536000, immutable'],
     ['private', 'published', true, 'private, no-store'],
   ])('serves an Owner %s %s derivative', async (visibility, status, isOwner, cacheControl) => {
     const { env } = envFor(descriptor({ visibility, status }));

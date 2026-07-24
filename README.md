@@ -132,6 +132,13 @@ npx wrangler d1 execute our-love-story --local --file=database/migrations/0004_t
 npx wrangler d1 execute our-love-story --remote --file=database/migrations/0004_timeline_covers.sql
 ```
 
+The photo-dimension upgrade uses:
+
+```bash
+npx wrangler d1 execute our-love-story --local --file=database/migrations/0006_upload_image_dimensions.sql
+npx wrangler d1 execute our-love-story --remote --file=database/migrations/0006_upload_image_dimensions.sql
+```
+
 Only run the remote command during an intentional release. Keep Clerk secret
 keys in Worker Secrets and keep the R2 bucket private; this migration does not
 require changing R2 objects or exposing original media URLs.
@@ -216,10 +223,37 @@ Deploy command: npx wrangler deploy
 
 Add `VITE_CLERK_PUBLISHABLE_KEY` as a build environment variable, and add the four runtime secrets from the previous section to the Worker. Never store secrets in `wrangler.toml`.
 
+# Backup and recovery
+
+Create a local archive of the remote D1 database and every R2 object before a
+release or on a regular personal schedule:
+
+```bash
+npm run backup:cloudflare
+```
+
+The script reads R2 credentials from the shell or `.dev.vars`, exports D1
+through Wrangler, streams R2 objects without loading large videos into memory,
+and writes `manifest.json` with every original object key. By default, backups
+are written to `../our-love-story-backups/<timestamp>` so they are outside the
+repository. Use
+`npm run backup:cloudflare -- --output D:\Backups\our-story`
+to choose another empty destination.
+
+Keep at least two copies on different storage providers. For a D1-only
+incident, prefer Cloudflare D1 Time Travel. For a full restore, use the SQL
+export for D1 and the manifest's `key` to `file` mapping when uploading R2
+objects through the S3-compatible API. Test recovery in separate temporary
+D1/R2 resources before replacing production data.
+
+The Worker also runs a daily scheduled cleanup. It removes expired or
+previously abandoned upload Sessions and their temporary originals and
+thumbnails. Confirmed memories and their media are never selected by this job.
+
 # Media rules
 
 - Up to 20 files per memory
-- Images: JPEG, PNG, WebP, or GIF, up to 50 MiB each
+- Images: JPEG, PNG, WebP, GIF, HEIC, or HEIF, up to 50 MiB each
 - Videos: MP4, MOV, or WebM, up to 2 GiB each
 - Public memories are visible to anyone on the internet without signing in. Public image thumbnails and previews are available to guests; original image downloads remain owner-only.
 - Private memories and drafts are only returned to allowlisted owners
@@ -231,10 +265,10 @@ MOV and WebM playback depends on browser codec support. The original file is sti
 
 # Current limitations and next improvements
 
-- HEIC files are not accepted yet because browsers cannot display them consistently without conversion
+- HEIC and HEIF photos are converted to JPEG in the browser before upload; the converted JPEG is stored as the original for that memory.
 - Image thumbnails and previews are generated as optimized WebP derivatives; owner originals remain available for download.
-- No edit/delete UI yet, although authenticated Worker endpoints already support metadata updates and deletion
+- Owners can edit memory metadata and delete individual assets; deleting an entire memory remains an API-only operation.
 - No resumable multipart upload yet; very large videos should be added after a dedicated multipart workflow
-- Orphaned objects from an interrupted client flow should later be removed by a scheduled cleanup job
+- Backups are operator-triggered so the destination can remain outside Cloudflare and under the owners' control.
 
 See [API_CONTRACT.md](./API_CONTRACT.md) for endpoint details.

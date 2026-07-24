@@ -9,5 +9,6 @@ dist
 .worktrees/
 database/owners.local.sql
 r2-cors.local.json
+backups/
 
 *.tsbuildinfo

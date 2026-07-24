@@ -268,6 +268,20 @@ function validateMemoryAsset(
     ),
     mimeType,
     sizeBytes,
+    width:
+      mediaType === 'image'
+        ? optionalPositiveInteger(
+            record.width,
+            `Asset ${index + 1} width`,
+          )
+        : null,
+    height:
+      mediaType === 'image'
+        ? optionalPositiveInteger(
+            record.height,
+            `Asset ${index + 1} height`,
+          )
+        : null,
     mediaType,
     sortOrder,
     visibility: record.visibility === undefined
@@ -409,6 +423,19 @@ export function requiredPositiveInteger(
     );
   }
   return value;
+}
+
+export function optionalPositiveInteger(
+  value: unknown,
+  label: string,
+): number | null {
+  if (value === undefined || value === null) {
+    return null;
+  }
+  return requiredPositiveInteger(
+    value,
+    label,
+  );
 }
 
 export function requiredNonNegativeInteger(

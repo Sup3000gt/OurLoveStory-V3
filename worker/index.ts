@@ -43,6 +43,9 @@ import {
   matchUploadSessionRoute,
 } from './lib/upload-session-routes';
 import { authorizeUploads } from './lib/uploads';
+import {
+  cleanupExpiredUploadSessions,
+} from './lib/upload-session-cleanup';
 
 export default {
   async fetch(
@@ -284,5 +287,21 @@ export default {
     } catch (error) {
       return handleError(error);
     }
+  },
+
+  async scheduled(
+    controller: ScheduledController,
+    env: Env,
+    ctx: ExecutionContext,
+  ): Promise<void> {
+    ctx.waitUntil(
+      cleanupExpiredUploadSessions(
+        env,
+        {
+          requestId:
+            `scheduled:${controller.scheduledTime}`,
+        },
+      ),
+    );
   },
 } satisfies ExportedHandler<Env>;

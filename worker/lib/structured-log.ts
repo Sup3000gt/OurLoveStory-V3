@@ -9,7 +9,8 @@ export type UploadLogStage =
   | 'record.failed'
   | 'review'
   | 'confirm'
-  | 'abandon';
+  | 'abandon'
+  | 'cleanup';
 
 export interface UploadLogEvent {
   level: 'info' | 'warn' | 'error';

@@ -38,6 +38,8 @@ function selected(
       'b'.repeat(64),
     occurrenceIndex: 0,
     targetVisibility: 'private',
+    width: 1200,
+    height: 800,
     sessionFileId,
     status,
     allowDuplicate: false,

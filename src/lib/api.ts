@@ -15,6 +15,7 @@ import type {
   TimelinePeriodType,
   TimelineResponse,
   UpdateAssetVisibilityResponse,
+  UpdateMemoryRequest,
   UpdateSessionFileRequest,
   UpdateSessionReviewRequest,
   UploadFileRequest,
@@ -127,6 +128,21 @@ export async function getMemory(
   return await apiRequest<Memory>(
     `/memories/${encodeURIComponent(memoryId)}`,
     getToken,
+  );
+}
+
+export async function updateMemory(
+  memoryId: string,
+  input: UpdateMemoryRequest,
+  getToken: GetToken,
+): Promise<Memory> {
+  return apiRequest<Memory>(
+    `/memories/${encodeURIComponent(memoryId)}`,
+    getToken,
+    {
+      method: 'PATCH',
+      body: JSON.stringify(input),
+    },
   );
 }
 

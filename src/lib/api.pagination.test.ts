@@ -1,5 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { getMemory, getMemories } from './api';
+import {
+  getMemory,
+  getMemories,
+  updateMemory,
+} from './api';
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -92,5 +96,61 @@ describe('getMemories pagination', () => {
       '/api/memories/memory%2Fa',
       expect.objectContaining({ credentials: 'same-origin' }),
     );
+  });
+
+  it('updates memory metadata through the owner endpoint', async () => {
+    const updated = {
+      id: 'memory/a',
+      title: 'Updated',
+    };
+    const fetchMock = vi.fn(
+      async (
+        _input:
+          RequestInfo | URL,
+        _init?: RequestInit,
+      ) =>
+        new Response(
+          JSON.stringify(updated),
+          {
+            status: 200,
+            headers: {
+              'content-type':
+                'application/json',
+            },
+          },
+        ),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(
+      updateMemory(
+        'memory/a',
+        { title: 'Updated' },
+        async () => 'owner-token',
+      ),
+    ).resolves.toEqual(updated);
+
+    const [
+      path,
+      init,
+    ] = fetchMock.mock.calls[0]!;
+    expect(path).toBe(
+      '/api/memories/memory%2Fa',
+    );
+    expect(init).toEqual(
+      expect.objectContaining({
+        method: 'PATCH',
+        body: JSON.stringify({
+          title: 'Updated',
+        }),
+        credentials:
+          'same-origin',
+      }),
+    );
+    expect(
+      new Headers(
+        init?.headers,
+      ).get('authorization'),
+    ).toBe('Bearer owner-token');
   });
 });

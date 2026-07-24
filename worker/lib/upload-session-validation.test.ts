@@ -46,6 +46,36 @@ describe('validateCreateUploadSessionRequest', () => {
     expect(result.sessionKind).toBe('append');
   });
 
+  it('keeps valid image dimensions and rejects invalid values', () => {
+    const result =
+      validateCreateUploadSessionRequest({
+        sessionKind: 'append',
+        memoryId: 'memory-a',
+        files: [{
+          ...photo(0),
+          width: 4032,
+          height: 3024,
+        }],
+      });
+
+    expect(result.files[0])
+      .toMatchObject({
+        width: 4032,
+        height: 3024,
+      });
+    expect(() =>
+      validateCreateUploadSessionRequest({
+        sessionKind: 'append',
+        memoryId: 'memory-a',
+        files: [{
+          ...photo(0),
+          width: 0,
+          height: 3024,
+        }],
+      }),
+    ).toThrow('positive integer');
+  });
+
   it('rejects one hundred and one photos', () => {
     expect(() =>
       validateCreateUploadSessionRequest({

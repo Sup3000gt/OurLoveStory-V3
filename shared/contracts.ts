@@ -143,6 +143,8 @@ export interface CreateMemoryAssetInput {
   originalFilename: string;
   mimeType: string;
   sizeBytes: number;
+  width?: number | null;
+  height?: number | null;
   mediaType: MediaType;
   sortOrder: number;
   visibility: Visibility;
@@ -216,6 +218,8 @@ export interface UploadSessionFileInput {
   filename: string;
   mimeType: string;
   sizeBytes: number;
+  width?: number | null;
+  height?: number | null;
   originalSortOrder: number;
   targetVisibility: Visibility;
 }

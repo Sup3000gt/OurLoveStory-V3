@@ -107,6 +107,8 @@ CREATE TABLE IF NOT EXISTS upload_session_files (
   original_filename TEXT NOT NULL,
   mime_type TEXT NOT NULL,
   size_bytes INTEGER NOT NULL CHECK (size_bytes > 0),
+  width INTEGER CHECK (width IS NULL OR width > 0),
+  height INTEGER CHECK (height IS NULL OR height > 0),
   original_sort_order INTEGER NOT NULL
     CHECK (original_sort_order BETWEEN 0 AND 99),
   review_sort_order INTEGER NOT NULL

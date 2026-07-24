@@ -11,6 +11,9 @@ subrequests = 1_000
 enabled = true
 head_sampling_rate = 1
 
+[triggers]
+crons = ["17 5 * * *"]
+
 [assets]
 binding = "ASSETS"
 not_found_handling = "single-page-application"

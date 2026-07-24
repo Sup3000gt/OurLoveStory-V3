@@ -15,6 +15,7 @@ import {
 import {
   MAX_IMAGE_BYTES,
   ValidationError,
+  optionalPositiveInteger,
   optionalString,
   requiredBoundedInteger,
   requiredNonNegativeInteger,
@@ -138,6 +139,14 @@ function validateSessionFiles(
       filename,
       mimeType,
       sizeBytes,
+      width: optionalPositiveInteger(
+        record.width,
+        `Photo ${index + 1} width`,
+      ),
+      height: optionalPositiveInteger(
+        record.height,
+        `Photo ${index + 1} height`,
+      ),
       originalSortOrder,
       targetVisibility: validateVisibility(
         record.targetVisibility,

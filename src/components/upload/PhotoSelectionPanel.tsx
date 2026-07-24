@@ -62,7 +62,7 @@ export function PhotoSelectionPanel({
         <input
           type="file"
           multiple
-          accept="image/jpeg,image/png,image/webp,image/gif"
+          accept="image/jpeg,image/png,image/webp,image/gif,image/heic,image/heif,.heic,.heif"
           disabled={busy}
           onChange={(event) => {
             const files = Array.from(

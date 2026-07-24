@@ -43,8 +43,8 @@ describe('image derivative primitives', () => {
     expect(isRemoteTransformSizeSupported(100 * 1024 * 1024 + 1)).toBe(false);
   });
 
-  it('uses public revalidation only for public derivatives', () => {
-    expect(derivativeCacheControl(true)).toBe('public, no-cache, must-revalidate');
+  it('uses immutable caching only for public versioned derivatives', () => {
+    expect(derivativeCacheControl(true)).toBe('public, max-age=31536000, immutable');
     expect(derivativeCacheControl(false)).toBe('private, no-store');
   });
 

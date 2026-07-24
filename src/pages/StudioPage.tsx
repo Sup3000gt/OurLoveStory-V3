@@ -68,6 +68,9 @@ import {
   classifySelection,
 } from '../lib/photo-file';
 import {
+  normalizeSelectedMediaFiles,
+} from '../lib/heic-conversion';
+import {
   formatMemoryDate,
 } from '../lib/format';
 import {
@@ -395,9 +398,30 @@ export function StudioPage({
     setError('');
 
     try {
+      const normalizedFiles =
+        await normalizeSelectedMediaFiles(
+          selectedFiles,
+          {
+            onConvert: (event) => {
+              setProgress(
+                t(
+                  'studio.convertingHeic',
+                  {
+                    filename:
+                      event.filename,
+                    current:
+                      event.index + 1,
+                    total:
+                      event.total,
+                  },
+                ),
+              );
+            },
+          },
+        );
       const mode =
         chooseStudioSelectionMode(
-          selectedFiles,
+          normalizedFiles,
         );
 
       if (
@@ -416,7 +440,7 @@ export function StudioPage({
 
         await photoWorkflow
           .selectPhotos(
-            selectedFiles,
+            normalizedFiles,
           );
 
         setSelectionMode(
@@ -427,7 +451,7 @@ export function StudioPage({
       }
 
       validateSelectedFiles(
-        selectedFiles,
+        normalizedFiles,
         t,
       );
 
@@ -442,7 +466,7 @@ export function StudioPage({
 
       const next =
         createLegacySelectedMedia(
-          selectedFiles,
+          normalizedFiles,
         );
 
       setFiles(next);
@@ -461,6 +485,8 @@ export function StudioPage({
               'studio.invalidSelection',
             ),
       );
+    } finally {
+      setProgress('');
     }
   }
 
@@ -1140,7 +1166,7 @@ export function StudioPage({
             <input
               type="file"
               multiple
-              accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/quicktime,video/webm"
+              accept="image/jpeg,image/png,image/webp,image/gif,image/heic,image/heif,.heic,.heif,video/mp4,video/quicktime,video/webm"
               disabled={pageBusy}
               onChange={(event) => {
                 const selected =

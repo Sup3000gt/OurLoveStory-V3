@@ -22,6 +22,9 @@ import {
   classifySelection,
 } from '../lib/photo-file';
 import {
+  normalizeSelectedMediaFiles,
+} from '../lib/heic-conversion';
+import {
   PhotoHashClient,
 } from '../lib/photo-hash-client';
 import {
@@ -112,21 +115,36 @@ export function usePhotoSessionUpload() {
 
   const selectPhotos = useCallback(
     async (files: File[]) => {
-      const mode = classifySelection(files);
-
-      if (mode.mode !== 'photo-session') {
-        throw new Error(
-          'Selections containing video must use the legacy uploader.',
-        );
-      }
-
       setBusy(true);
       setErrorText('');
 
       try {
+        const normalizedFiles =
+          await normalizeSelectedMediaFiles(
+            files,
+            {
+              onConvert: (event) => {
+                setProgressText(
+                  `Converting ${event.filename} to JPEG `
+                  + `(${event.index + 1}/${event.total})`,
+                );
+              },
+            },
+          );
+        const mode =
+          classifySelection(
+            normalizedFiles,
+          );
+
+        if (mode.mode !== 'photo-session') {
+          throw new Error(
+            'Selections containing video must use the legacy uploader.',
+          );
+        }
+
         const prepared =
           await preparePhotoMetadata(
-            files,
+            normalizedFiles,
             getHasher(),
             (event) => {
               setProgressText(
@@ -271,6 +289,10 @@ export function usePhotoSessionUpload() {
                   photo.file.type.toLowerCase(),
                 sizeBytes:
                   photo.file.size,
+                width:
+                  photo.width,
+                height:
+                  photo.height,
                 originalSortOrder,
                 targetVisibility:
                   photo.targetVisibility,
@@ -349,6 +371,10 @@ export function usePhotoSessionUpload() {
                       .toLowerCase(),
                   sizeBytes:
                     photo.file.size,
+                  width:
+                    photo.width,
+                  height:
+                    photo.height,
                   originalSortOrder,
                   targetVisibility:
                     photo.targetVisibility,
@@ -421,6 +447,10 @@ export function usePhotoSessionUpload() {
                     photo.file.type.toLowerCase(),
                   sizeBytes:
                     photo.file.size,
+                  width:
+                    photo.width,
+                  height:
+                    photo.height,
                   originalSortOrder,
                   targetVisibility:
                     photo.targetVisibility,
@@ -493,6 +523,10 @@ export function usePhotoSessionUpload() {
                       .toLowerCase(),
                   sizeBytes:
                     photo.file.size,
+                  width:
+                    photo.width,
+                  height:
+                    photo.height,
                   originalSortOrder,
                   targetVisibility:
                     photo.targetVisibility,
@@ -540,7 +574,14 @@ export function usePhotoSessionUpload() {
       setErrorText('');
 
       try {
-        const mode = classifySelection(files);
+        const normalizedFiles =
+          await normalizeSelectedMediaFiles(
+            files,
+          );
+        const mode =
+          classifySelection(
+            normalizedFiles,
+          );
 
         if (mode.mode !== 'photo-session') {
           throw new Error(
@@ -550,7 +591,7 @@ export function usePhotoSessionUpload() {
 
         const prepared =
           await preparePhotoMetadata(
-            files,
+            normalizedFiles,
             getHasher(),
           );
 
@@ -649,8 +690,14 @@ export function usePhotoSessionUpload() {
         SelectedPhoto[] = [];
 
       try {
+        const normalizedFiles =
+          await normalizeSelectedMediaFiles(
+            files,
+          );
         const mode =
-          classifySelection(files);
+          classifySelection(
+            normalizedFiles,
+          );
 
         if (mode.mode !== 'photo-session') {
           throw new Error(
@@ -660,7 +707,7 @@ export function usePhotoSessionUpload() {
 
         const prepared =
           await preparePhotoMetadata(
-            files,
+            normalizedFiles,
             getHasher(),
           );
 

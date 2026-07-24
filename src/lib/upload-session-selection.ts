@@ -11,6 +11,10 @@ import {
 import type {
   ContentHasher,
 } from './photo-hash-client';
+import {
+  readImageDimensions,
+  type ImageDimensions,
+} from './image-metadata';
 
 export type LocalPhotoStatus =
   | 'fingerprinting'
@@ -31,6 +35,8 @@ export interface PreparedPhotoMetadata {
   contentHash: string;
   occurrenceIndex: number;
   targetVisibility: Visibility;
+  width: number | null;
+  height: number | null;
 }
 
 export interface BoundLocalPhoto
@@ -54,8 +60,14 @@ export async function preparePhotoMetadata(
   onEvent?: (
     event: PhotoPreparationEvent,
   ) => void,
+  readDimensions: (
+    file: File,
+  ) => Promise<ImageDimensions | null> =
+    readImageDimensions,
 ): Promise<PreparedPhotoMetadata[]> {
   const fingerprints: string[] = [];
+  const dimensions:
+    Array<ImageDimensions | null> = [];
 
   for (
     let index = 0;
@@ -73,6 +85,9 @@ export async function preparePhotoMetadata(
 
     fingerprints.push(
       await fingerprintPhoto(file),
+    );
+    dimensions.push(
+      await readDimensions(file),
     );
   }
 
@@ -107,6 +122,12 @@ export async function preparePhotoMetadata(
     contentHash: contentHashes[index]!,
     occurrenceIndex: occurrenceIndexes[index]!,
     targetVisibility: 'private',
+    width:
+      dimensions[index]?.width
+      ?? null,
+    height:
+      dimensions[index]?.height
+      ?? null,
   }));
 }
 

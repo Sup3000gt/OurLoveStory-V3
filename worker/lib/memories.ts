@@ -365,8 +365,8 @@ export async function createMemory(
       env.DB.prepare(`
         INSERT INTO media_assets (
           id, memory_id, media_type, object_key, original_filename,
-          mime_type, size_bytes, sort_order, visibility
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+          mime_type, size_bytes, width, height, sort_order, visibility
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `).bind(
         assetIds[index],
         memoryId,
@@ -375,6 +375,8 @@ export async function createMemory(
         asset.originalFilename,
         asset.mimeType,
         asset.sizeBytes,
+        asset.width ?? null,
+        asset.height ?? null,
         asset.sortOrder,
         asset.visibility,
       ),

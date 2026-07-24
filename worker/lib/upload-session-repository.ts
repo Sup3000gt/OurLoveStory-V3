@@ -43,6 +43,8 @@ export interface UploadSessionFileRow {
   original_filename: string;
   mime_type: string;
   size_bytes: number;
+  width: number | null;
+  height: number | null;
   original_sort_order: number;
   review_sort_order: number;
   target_visibility: Visibility;

@@ -55,7 +55,9 @@ export function isRemoteTransformSizeSupported(sizeBytes: number): boolean {
 }
 
 export function derivativeCacheControl(publiclyVisible: boolean): string {
-  return publiclyVisible ? 'public, no-cache, must-revalidate' : 'private, no-store';
+  return publiclyVisible
+    ? 'public, max-age=31536000, immutable'
+    : 'private, no-store';
 }
 
 function withoutWeakPrefix(value: string): string {
